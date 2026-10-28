@@ -17,13 +17,36 @@ type Props = {
   plan: Plan;
   onSelect: (id: string) => void;
   onOpen: () => void;
+  departure: string; // hora de salida de la búsqueda, para que la ruta sea la de ese momento
 };
 
 const LINES = 'dq-lines';
-const styleUrl = (dark: boolean) => `https://tiles.openfreemap.org/styles/${dark ? 'dark' : 'positron'}`;
+const STYLE = 'https://tiles.openfreemap.org/styles/positron';
+
+// Polilínea codificada de Google → [lng, lat].
+function decode(s: string) {
+  const out: [number, number][] = [];
+  let i = 0, lat = 0, lng = 0;
+  const next = () => { let r = 0, sh = 0, b; do { b = s.charCodeAt(i++) - 63; r |= (b & 0x1f) << sh; sh += 5; } while (b >= 0x20); return r & 1 ? ~(r >> 1) : r >> 1; };
+  while (i < s.length) { lat += next(); lng += next(); out.push([lng / 1e5, lat / 1e5]); }
+  return out;
+}
+
+// Una ruta por persona y sitio, guardada mientras dure la visita: volver a un sitio no repite la llamada.
+const routes = new Map<string, Promise<[number, number][] | null>>();
+function routeFor(p: Person, dest: LatLng, departure: string) {
+  const key = `${p.loc!.lat},${p.loc!.lng}|${p.mode}|${dest.lat},${dest.lng}`;
+  if (!routes.has(key)) {
+    routes.set(key, fetch('/api/route', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ origin: p.loc, dest, mode: p.mode, when: departure }),
+    }).then((r) => (r.ok ? r.json() : null)).then((d) => (d?.polyline ? decode(d.polyline) : null)).catch(() => null));
+  }
+  return routes.get(key)!;
+}
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-export default function MeetMap({ people, midpoint, options, selected, plan, onSelect, onOpen }: Props) {
+export default function MeetMap({ people, midpoint, options, selected, plan, onSelect, onOpen, departure }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const markers = useRef<maplibregl.Marker[]>([]);
@@ -42,16 +65,15 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     m.addLayer({
       id: LINES, type: 'line', source: LINES,
       layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': ['get', 'color'], 'line-width': 4, 'line-opacity': 0.9, 'line-dasharray': [0.2, 2] },
+      paint: { 'line-color': ['get', 'color'], 'line-width': 5, 'line-opacity': 0.9 },
     });
   };
 
   useEffect(() => {
     if (!box.current) return;
     maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs'); // lo copia scripts/copy-map-worker.mjs
-    const dark = window.matchMedia('(prefers-color-scheme: dark)');
     const m = new maplibregl.Map({
-      container: box.current, style: styleUrl(dark.matches),
+      container: box.current, style: STYLE,
       center: [selected.loc.lng, selected.loc.lat], zoom: 13,
       attributionControl: { compact: true }, cooperativeGestures: true, dragRotate: false, pitchWithRotate: false,
       locale: {
@@ -63,11 +85,8 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     m.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
     m.touchZoomRotate.disableRotation();
     m.on('style.load', syncLines);
-    const onTheme = () => m.setStyle(styleUrl(dark.matches));
-    dark.addEventListener('change', onTheme);
     map.current = m;
     return () => {
-      dark.removeEventListener('change', onTheme);
       m.remove();
       map.current = null;
     };
@@ -102,21 +121,35 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     add(selected.loc, meet, 'bottom');
     if (!reduceMotion()) gsap.from(meet.firstElementChild, { y: -26, scale: 0.6, duration: 0.6, ease: 'bounce.out', transformOrigin: '50% 100%' });
 
-    linesData.current = {
-      type: 'FeatureCollection',
-      features: people.flatMap((p, i) => (p.loc ? [{
-        type: 'Feature' as const, properties: { color: COLORS[i] },
-        geometry: { type: 'LineString' as const, coordinates: [[p.loc.lng, p.loc.lat], [selected.loc.lng, selected.loc.lat]] },
-      }] : [])),
-    };
+    // Mientras llegan las rutas reales (o si fallan) se ve una línea recta punteada.
+    const straight = (p: Person, i: number) => ({
+      type: 'Feature' as const, properties: { color: COLORS[i], real: 0 },
+      geometry: { type: 'LineString' as const, coordinates: [[p.loc!.lng, p.loc!.lat], [selected.loc.lng, selected.loc.lat]] },
+    });
+    const withLoc = people.map((p, i) => [p, i] as const).filter(([p]) => p.loc);
+    linesData.current = { type: 'FeatureCollection', features: withLoc.map(([p, i]) => straight(p, i)) };
     syncLines();
+    // Se piden tras un momento quieto en el sitio: pasar tarjetas deprisa no gasta rutas.
+    let live = true;
+    const t = setTimeout(async () => {
+      const got = await Promise.all(withLoc.map(([p]) => routeFor(p, selected.loc, departure)));
+      if (!live) return;
+      linesData.current = {
+        type: 'FeatureCollection',
+        features: withLoc.map(([p, i], k) => (got[k]?.length
+          ? { type: 'Feature' as const, properties: { color: COLORS[i], real: 1 }, geometry: { type: 'LineString' as const, coordinates: got[k]! } }
+          : straight(p, i))),
+      };
+      syncLines();
+    }, 600);
 
     const bounds = new maplibregl.LngLatBounds();
     people.forEach((p) => p.loc && bounds.extend([p.loc.lng, p.loc.lat]));
     bounds.extend([selected.loc.lng, selected.loc.lat]);
     m.fitBounds(bounds, { padding: { top: 56, bottom: 40, left: 40, right: 40 }, maxZoom: 15, duration: fitted.current && !reduceMotion() ? 700 : 0 });
     fitted.current = true;
-  }, [people, midpoint, options, selected, plan]);
+    return () => { live = false; clearTimeout(t); };
+  }, [people, midpoint, options, selected, plan, departure]);
 
   return <div className="map" ref={box} />;
 }

@@ -97,7 +97,7 @@ export default function Results({ result, people, plan, when, selected, sort, on
 
       <MeetMap
         people={people} midpoint={result.midpoint.loc} options={options} selected={selected} plan={plan}
-        onSelect={onSelect} onOpen={onOpenVenue}
+        onSelect={onSelect} onOpen={onOpenVenue} departure={result.departureTime}
       />
 
       <details className="how">
