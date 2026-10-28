@@ -1,0 +1,3 @@
+Overpass (pesos 600, 800 y 900), de Delve Withrington, Dave Bailey y Thomas Jockin.
+Licencia SIL Open Font License 1.1: https://openfontlicense.org
+Solo se usan en el servidor para dibujar las imágenes de vista previa (opengraph-image).
