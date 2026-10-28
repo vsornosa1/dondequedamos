@@ -1,9 +1,9 @@
 'use client';
 // La primera pantalla: quién viene (cada uno es una línea), qué plan y cuándo.
-import { useRef, type CSSProperties } from 'react';
-import { COLORS, PLANS, ModeIcon, PlanIcon, MODE_LABEL } from './brand';
+import { Fragment, useRef, type CSSProperties } from 'react';
+import { COLORS, PLANS, ClockIcon, ModeIcon, PlanIcon, MODE_LABEL } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
-import { dayLabel, defaultLater, hhmm, initialOf, nameOf, whenText } from '@/lib/client';
+import { dayParts, defaultLater, hhmm, initialOf, nameOf, whenText } from '@/lib/client';
 import type { Person, Plan, When } from '@/lib/types';
 
 type Props = {
@@ -105,6 +105,7 @@ function Plans({ plan, onPlan }: { plan: Plan; onPlan: (p: Plan) => void }) {
 
 const DAYS = Array.from({ length: 7 }, (_, i) => i);
 const SLOTS = Array.from({ length: (26 * 60 - 8 * 60) / 30 + 1 }, (_, k) => 8 * 60 + k * 30); // de 08:00 a 02:00
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 function WhenPicker({ when, onWhen }: { when: When; onWhen: (w: When) => void }) {
   const box = useRef<HTMLDivElement>(null);
@@ -112,17 +113,20 @@ function WhenPicker({ when, onWhen }: { when: When; onWhen: (w: When) => void })
   const later = when.kind === 'later' ? when : null;
   const now = new Date();
   const nowMin = now.getHours() * 60 + now.getMinutes();
+  // Para hoy solo se ofrecen las horas que aún no han pasado.
+  const slots = later?.day === 0 ? SLOTS.filter((m) => m > nowMin + 15) : SLOTS;
 
+  // Se recorta solo mientras se despliega; después las filas llegan hasta el borde de la tarjeta.
   useGSAP(() => {
-    if (!later) return;
-    if (!reduceMotion()) gsap.from('.when-later', { height: 0, opacity: 0, duration: 0.45, ease: 'power3.out', clearProps: 'height,opacity' });
+    if (!later || reduceMotion()) return;
+    gsap.fromTo('.when-later', { height: 0, opacity: 0, overflow: 'hidden' }, { height: 'auto', opacity: 1, duration: 0.45, ease: 'power3.out', clearProps: 'height,opacity,overflow' });
   }, { dependencies: [!!later], scope: box });
 
-  // Al abrir o cambiar de día, la hora elegida queda a la vista.
+  // Al abrir o cambiar de día, la hora elegida queda en el centro.
   useGSAP(() => {
     const strip = times.current;
     const chip = strip?.querySelector<HTMLElement>('[aria-checked="true"]');
-    if (strip && chip) strip.scrollLeft = chip.offsetLeft - strip.clientWidth / 2 + chip.clientWidth / 2;
+    if (strip && chip) strip.scrollLeft = chip.offsetLeft - (strip.clientWidth - chip.clientWidth) / 2;
   }, { dependencies: [later?.day, !!later] });
 
   const setDay = (day: number) => {
@@ -140,27 +144,34 @@ function WhenPicker({ when, onWhen }: { when: When; onWhen: (w: When) => void })
       {later && (
         <div className="when-later">
           <div className="hstrip" role="radiogroup" aria-label="Día">
-            {DAYS.map((d) => (
-              <button key={d} type="button" role="radio" className="day" aria-checked={later.day === d} onClick={() => setDay(d)}>
-                {dayLabel(d)}
-              </button>
-            ))}
-          </div>
-          <div className="hstrip" role="radiogroup" aria-label="Hora" ref={times}>
-            {SLOTS.map((m) => {
-              const past = later.day === 0 && m <= nowMin + 15;
+            {DAYS.map((d) => {
+              const { name, num } = dayParts(d);
               return (
-                <button
-                  key={m} type="button" role="radio" className="slot" aria-checked={later.minutes === m} disabled={past}
-                  onClick={() => onWhen({ ...later, minutes: m })}
-                >
-                  {hhmm(m)}
-                  {m >= 24 * 60 && <small>madrugada</small>}
+                <button key={d} type="button" role="radio" className="day" aria-checked={later.day === d} onClick={() => setDay(d)}>
+                  <span className="day-name">{name}</span>
+                  <span className="day-num">{num}</span>
                 </button>
               );
             })}
           </div>
-          <p className="when-sum">Calculamos con el transporte y el tráfico de {whenText(when)}.</p>
+          <div className="hstrip" role="radiogroup" aria-label="Hora" ref={times}>
+            {slots.map((m) => (
+              <Fragment key={m}>
+                {m === 24 * 60 && <span className="strip-sep" aria-hidden="true">madrugada</span>}
+                <button
+                  type="button" role="radio" className="slot" aria-checked={later.minutes === m}
+                  aria-label={m >= 24 * 60 ? `${hhmm(m)} de madrugada` : undefined}
+                  onClick={() => onWhen({ ...later, minutes: m })}
+                >
+                  {hhmm(m)}
+                </button>
+              </Fragment>
+            ))}
+          </div>
+          <p className="when-sum">
+            <ClockIcon />
+            <span><b>{cap(whenText(when))}</b>Con el transporte y el tráfico de esa hora.</span>
+          </p>
         </div>
       )}
       {!later && <p className="hint">El metro de un domingo no es el de un martes a las 9: usamos los horarios y el tráfico del momento.</p>}

@@ -48,24 +48,29 @@ export function whenDate(w: When) {
 
 const weekday = (d: Date, style: 'long' | 'short') => new Intl.DateTimeFormat('es-ES', { weekday: style }).format(d);
 
-export function dayLabel(offset: number) {
-  if (offset === 0) return 'Hoy';
-  if (offset === 1) return 'Mañana';
+// Para las fichas de día: «Hoy 29», «Mañana 30», «vie 31».
+export function dayParts(offset: number) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
-  return `${weekday(d, 'short').replace('.', '')} ${d.getDate()}`;
+  const name = offset === 0 ? 'Hoy' : offset === 1 ? 'Mañana' : weekday(d, 'short').replace('.', '');
+  return { name, num: d.getDate() };
 }
 
-// «hoy a las 21:00», «el sábado 1 a las 21:00»
+// «hoy a las 21:00», «el sábado 1 a las 21:00». De madrugada se habla de la noche de antes:
+// a la 01:00 tras el sábado es «la noche del sábado», no «el domingo».
 export function whenText(w: When) {
   const d = whenDate(w);
-  if (!d) return 'ahora';
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const days = Math.round((new Date(d).setHours(0, 0, 0, 0) - today.getTime()) / 864e5);
-  const at = `a las ${hhmm(d.getHours() * 60 + d.getMinutes())}`;
-  if (days === 0) return `hoy ${at}`;
-  if (days === 1) return `mañana ${at}`;
+  if (!d || w.kind === 'now') return 'ahora';
+  const at = `${d.getHours() === 1 ? 'a la' : 'a las'} ${hhmm(w.minutes)}`;
+  if (w.minutes >= 24 * 60) {
+    if (w.day === 0) return `esta noche ${at}`;
+    if (w.day === 1) return `mañana por la noche ${at}`;
+    const eve = new Date(d);
+    eve.setDate(eve.getDate() - 1);
+    return `la noche del ${weekday(eve, 'long')} ${eve.getDate()} ${at}`;
+  }
+  if (w.day === 0) return `hoy ${at}`;
+  if (w.day === 1) return `mañana ${at}`;
   return `el ${weekday(d, 'long')} ${d.getDate()} ${at}`;
 }
 
