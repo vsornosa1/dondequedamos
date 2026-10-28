@@ -2,6 +2,20 @@
 import type { ReactNode } from 'react';
 import type { Mode, Plan } from '@/lib/types';
 
+export const SPONSORS_URL = 'https://github.com/sponsors/vsornosa1';
+
+// Cada búsqueda se paga a Google Maps: el pie invita a apoyar el proyecto.
+export function SponsorLink() {
+  return (
+    <div className="sponsor">
+      <a className="sponsor-link" href={SPONSORS_URL} target="_blank" rel="noopener noreferrer">
+        <HeartIcon />Apoya el proyecto
+      </a>
+      <p>Mantiene la app gratis y sin anuncios ;)</p>
+    </div>
+  );
+}
+
 export const COLORS = ['#E5352B', '#1F6FD1', '#12A150', '#8B4FD3', '#F07D19', '#0FA3B1', '#E0569B', '#7A5A3A'];
 
 export const MODES: Mode[] = ['TRANSIT', 'DRIVE', 'BICYCLE', 'WALK'];
@@ -82,6 +96,7 @@ export const CloseIcon = icon(<path d="M6 6l12 12M18 6L6 18" />);
 export const BackIcon = icon(<path d="M15 5l-7 7 7 7" />);
 export const ChevronIcon = icon(<path d="M9 5l7 7-7 7" />);
 export const ShareIcon = icon(<><path d="M12 3v12M7 8l5-5 5 5" /><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></>);
+export const HeartIcon = icon(<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z" />);
 export const CopyIcon = icon(<><rect x="8" y="8" width="12" height="12" rx="2.5" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>);
 export const ClockIcon = icon(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>);
 export const PinIcon = icon(<><path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></>);

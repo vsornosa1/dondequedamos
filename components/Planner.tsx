@@ -7,7 +7,7 @@ import Results from './Results';
 import PersonSheet from './PersonSheet';
 import VenueSheet from './VenueSheet';
 import Loader from './Loader';
-import { COLORS, MODE_TXT, Mark, ShareIcon, CopyIcon, planTxt } from './brand';
+import { COLORS, MODE_TXT, Mark, ShareIcon, CopyIcon, SponsorLink, planTxt } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
 import { api, listNames, load, nameOf, save, uid, wait, whenDate } from '@/lib/client';
 import { encodeProposal } from '@/lib/share.js';
@@ -169,6 +169,7 @@ export default function Planner() {
       )}
 
       <footer className="foot">
+        <SponsorLink />
         <p><strong>Fet a la terreta.</strong></p>
         <p>Tiempos y sitios de Google Maps. Mapa de OpenFreeMap y OpenStreetMap.</p>
       </footer>

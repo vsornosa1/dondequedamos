@@ -2,7 +2,7 @@
 // Lo que ve quien recibe el enlace en el grupo: el sitio, lo que tarda cada uno y cómo llegar.
 import { useRef } from 'react';
 import Diagram from './Diagram';
-import { COLORS, Mark, PlanIcon, planTxt } from './brand';
+import { COLORS, Mark, PlanIcon, SponsorLink, planTxt } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
 import type { Proposal } from '@/lib/types';
 
@@ -47,6 +47,7 @@ export default function SharedProposal({ p }: { p: Proposal }) {
       </section>
 
       <footer className="foot">
+        <SponsorLink />
         <p><strong>Fet a la terreta.</strong></p>
         <p>Tiempos y sitios de Google Maps.</p>
       </footer>
