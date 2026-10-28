@@ -1,6 +1,6 @@
 // La vista previa del enlace en WhatsApp: el cartel amarillo con el sitio y lo que tarda cada uno.
 import { ImageResponse } from 'next/og';
-import { decodeProposal } from '@/lib/share.js';
+import { loadProposal } from '@/lib/shortlinks';
 import { INK, OG_SIZE, OgLines, OgMark, PAPER, SIGNAL, ogFonts } from '@/lib/og';
 import { COLORS } from '@/components/brand';
 import type { Proposal } from '@/lib/types';
@@ -10,7 +10,7 @@ export const contentType = 'image/png';
 export const alt = 'Propuesta de sitio para quedar';
 
 export default async function Image({ params }: { params: Promise<{ data: string }> }) {
-  const p = decodeProposal((await params).data) as Proposal | null;
+  const p = (await loadProposal((await params).data)) as Proposal | null;
   const fonts = await ogFonts();
   const people = (p?.people ?? []).slice(0, 5).map((x, i) => ({ name: x.name.slice(0, 11), min: x.min, color: COLORS[i] }));
   const name = p?.name ?? '¿Dónde quedamos?';

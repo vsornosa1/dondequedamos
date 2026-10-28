@@ -96,13 +96,28 @@ export default function Planner() {
 
   const selected: Option | null = result ? result.options.find((o) => o.id === selectedId) ?? result.options[0] : null;
 
+  // El enlace corto se pide en cuanto te quedas en un sitio, no al pulsar: así el menú de compartir del
+  // móvil se abre al instante (Safari lo bloquea si antes hay que esperar a la red).
+  const shortIds = useRef(new Map<string, string>());
+  useEffect(() => {
+    if (!selected || !searched) return;
+    const t = setTimeout(() => {
+      const long = new URL(shareData(selected).url).pathname.slice(3);
+      if (shortIds.current.has(long) || long.length <= 8) return;
+      fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ d: long }) })
+        .then((r) => (r.ok ? r.json() : null)).then((d) => d?.id && shortIds.current.set(long, d.id)).catch(() => {});
+    }, 700);
+    return () => clearTimeout(t);
+  }, [selected?.id, searched]); // eslint-free: shareData solo lee estado ya incluido aquí
+
   function shareData(o: Option) {
     const s = searched!;
     const payload = {
       n: o.name, a: o.address, t: o.type, i: o.id, l: [o.loc.lat, o.loc.lng], pl: s.plan, w: result!.departureTime,
       p: o.times.map((t, i) => [nameOf(s.people[i], i), s.people[i].mode, t.min]),
     };
-    const url = `${window.location.origin}/p/${encodeProposal(payload)}`;
+    const long = encodeProposal(payload);
+    const url = `${window.location.origin}/p/${shortIds.current.get(long) || long}`;
     const lines = o.times.map((t, i) => `• ${nameOf(s.people[i], i)}: ${t.est ? '≈' : ''}${t.min} min ${MODE_TXT[s.people[i].mode]}`);
     const text = `📍 ¿Quedamos en ${o.name} para ${planTxt(s.plan)}?\n${o.address}\n\n⏱️ Lo que tarda cada uno:\n${lines.join('\n')}\n\nEs el sitio más justo para todos:`;
     return { url, text };
