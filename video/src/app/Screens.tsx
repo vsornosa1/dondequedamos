@@ -1,7 +1,7 @@
 import React, { type CSSProperties } from 'react';
 import '../../../app/globals.css';
 import { PEOPLE_COLORS, c } from '../look';
-import { MODES, NAMES, FROM, PLAN, type Mode } from '../timing';
+import { CAN, DEFAULT_CAN, MODES, NAMES, FROM, PLAN, type Mode } from '../timing';
 import { S } from '../geo';
 import {
   BackIcon, ChevronIcon, ClockIcon, CopyIcon, LocateIcon, MODE_LABEL, MODE_SHAPES, ModeIcon, PLANS, PinIcon, PlanIcon, SearchIcon, ShareIcon, planTxt, type Plan,
@@ -46,7 +46,7 @@ const hhmm = (m: number) => `${String(Math.floor(m / 60) % 24).padStart(2, '0')}
 export const PlanScreen = ({ st }: { st: PlanState }) => {
   const people = NAMES.map((name, i) => {
     const filled = i < 3 || st.yaniaFilled;
-    return { name: filled ? name : 'Persona 4', where: filled ? FROM[i] : null, mode: (filled ? MODES[i] : 'TRANSIT') as Mode, initial: filled ? name[0] : '4' };
+    return { name: filled ? name : 'Persona 4', where: filled ? FROM[i] : null, modes: filled ? CAN[i] : DEFAULT_CAN, initial: filled ? name[0] : '4' };
   });
   const missing = !st.yaniaFilled;
   return (
@@ -74,7 +74,7 @@ export const PlanScreen = ({ st }: { st: PlanState }) => {
                             <span className="person-name">{p.name}</span>
                             <span className={p.where ? 'person-where' : 'person-where missing'}>{p.where ?? '¿Desde dónde sale?'}</span>
                           </span>
-                          <span className="person-mode"><ModeIcon mode={p.mode} /></span>
+                          <span className={p.modes.length > 1 ? 'person-mode many' : 'person-mode'}>{p.modes.map((m) => <ModeIcon key={m} mode={m} />)}</span>
                         </button>
                       </li>
                     );
@@ -150,7 +150,7 @@ export const PlanScreen = ({ st }: { st: PlanState }) => {
 
 /* ---------- Ficha de una persona ---------- */
 
-export type SheetState = { open: number; name: string; mode: Mode | null; query: string; caret: boolean; results: number };
+export type SheetState = { open: number; name: string; modes: Mode[]; query: string; caret: boolean; results: number };
 
 export const PersonSheetView = ({ st }: { st: SheetState }) => {
   if (st.open <= 0) return null;
@@ -167,15 +167,16 @@ export const PersonSheetView = ({ st }: { st: SheetState }) => {
             <div className="ps-name" style={{ color: st.name ? c.ink : 'rgba(14,26,43,.5)' }}>{st.name || 'Persona 4'}</div>
             <button type="button" className="ps-done">Listo</button>
           </div>
-          <p className="ps-label">Va en</p>
+          <p className="ps-label">Puede ir</p>
           <div className="ps-modes">
-            {(['TRANSIT', 'DRIVE', 'BICYCLE', 'WALK'] as Mode[]).map((m) => (
-              <button key={m} type="button" aria-checked={st.mode === m}>
+            {(['WALK', 'TRANSIT', 'BICYCLE', 'DRIVE'] as Mode[]).map((m) => (
+              <button key={m} type="button" aria-checked={st.modes.includes(m)}>
                 <ModeIcon mode={m} />
                 <span>{MODE_LABEL[m]}</span>
               </button>
             ))}
           </div>
+          <p className="ps-hint">Marca todo lo que puede usar: para cada sitio elegimos lo más rápido.</p>
           <p className="ps-label">Sale de</p>
           <div className="ps-search">
             <SearchIcon />

@@ -3,11 +3,12 @@ export type Plan = 'canas' | 'cafe' | 'cenar' | 'copas' | 'parque';
 export type Sort = 'justo' | 'rapido';
 export type LatLng = { lat: number; lng: number };
 
-export type Person = { id: string; name: string; mode: Mode; loc: LatLng | null; label: string };
+// modes: los transportes que puede usar; la búsqueda elige, para cada sitio, el más rápido de ellos.
+export type Person = { id: string; name: string; modes: Mode[]; loc: LatLng | null; label: string };
 // day: días desde hoy; minutes: desde las 00:00 de ese día (≥ 1440 = de madrugada).
 export type When = { kind: 'now' } | { kind: 'later'; day: number; minutes: number };
 
-export type Time = { min: number; est: boolean };
+export type Time = { min: number; est: boolean; mode: Mode }; // mode: el transporte con el que llega antes
 export type Stats = { max: number; min: number; avg: number; gap: number; score: number };
 export type Photo = { name: string; by: string };
 

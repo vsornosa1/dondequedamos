@@ -4,7 +4,7 @@
 import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { COLORS, meetPinHtml } from './brand';
+import { BackIcon, ChevronIcon, COLORS, meetPinHtml } from './brand';
 import { createMap, drawRoutes, laneOf, type Drawn } from './routeLayers';
 import { initialOf, nameOf } from '@/lib/client';
 import { gsap, reduceMotion } from '@/lib/gsap';
@@ -97,7 +97,8 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     const delay = first.current ? 0 : 600;
     first.current = false;
     const t = setTimeout(async () => {
-      const got = await Promise.all(withLoc.map(([p]) => routeFor(p.loc!, p.mode, selected.loc, departure)));
+      // Cada uno, con el transporte con el que llega antes a este sitio.
+      const got = await Promise.all(withLoc.map(([p, i]) => routeFor(p.loc!, selected.times[i].mode, selected.loc, departure)));
       if (!live) return;
       routes.current = {
         list: withLoc.flatMap(([, i], k) => (got[k] ? [{ coords: got[k]!, color: COLORS[i], lane: laneOf(i, people.length) }] : [])),
@@ -114,5 +115,20 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     return () => { live = false; clearTimeout(t); };
   }, [people, midpoint, options, selected, plan, departure]);
 
-  return <div className="map" ref={box} />;
+  // Pasar al sitio anterior o siguiente desde el mapa, en el mismo orden que las tarjetas y los números.
+  const at = Math.max(0, options.findIndex((o) => o.id === selected.id));
+  const go = (step: number) => onSelect(options[(at + step + options.length) % options.length].id);
+
+  return (
+    <div className="map-wrap">
+      <div className="map" ref={box} />
+      {options.length > 1 && (
+        <div className="map-switch">
+          <button type="button" onClick={() => go(-1)} aria-label="Sitio anterior"><BackIcon /></button>
+          <span aria-live="polite"><b>{at + 1}</b> de {options.length} · {selected.name}</span>
+          <button type="button" onClick={() => go(1)} aria-label="Sitio siguiente"><ChevronIcon /></button>
+        </div>
+      )}
+    </div>
+  );
 }

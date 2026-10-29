@@ -38,6 +38,9 @@ export default function PlanForm({ people, plan, when, recall, onOpenPerson, onA
       <section className="block" aria-labelledby="h-plan">
         <h2 id="h-plan">Qué plan</h2>
         <Plans plan={plan} onPlan={onPlan} />
+        {plan === 'canas' && people.some((p) => p.modes.includes('DRIVE')) && (
+          <p className="hint plan-note">Con cañas no contamos el coche: quien lo tenga irá a pie, en bici o en bus o metro.</p>
+        )}
       </section>
 
       <section className="block" aria-labelledby="h-when">
@@ -74,8 +77,8 @@ function People({ people, onOpen }: { people: Person[]; onOpen: (i: number) => v
                 {p.loc ? p.label : i === 0 ? '¿Desde dónde sales?' : '¿Desde dónde sale?'}
               </span>
             </span>
-            <span className="person-mode" title={MODE_LABEL[p.mode]}>
-              <ModeIcon mode={p.mode} />
+            <span className={p.modes.length > 1 ? 'person-mode many' : 'person-mode'} title={p.modes.map((m) => MODE_LABEL[m]).join(', ')}>
+              {p.modes.map((m) => <ModeIcon key={m} mode={m} />)}
             </span>
           </button>
         </li>

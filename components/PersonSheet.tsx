@@ -2,9 +2,12 @@
 // Editar a una persona: nombre, cómo viene y desde dónde. Pensado para el pulgar y el teclado del móvil.
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import Sheet from './Sheet';
-import { MODES, MODE_LABEL, ModeIcon, LocateIcon, SearchIcon, PinIcon, ClockIcon } from './brand';
+import { MODE_LABEL, ModeIcon, LocateIcon, SearchIcon, PinIcon, ClockIcon } from './brand';
 import { api, initialOf, load, save, uid } from '@/lib/client';
-import type { LatLng, Person } from '@/lib/types';
+import type { LatLng, Mode, Person } from '@/lib/types';
+
+// De lo más sencillo a lo menos: así se leen los que puede usar cada uno.
+const CAN: Mode[] = ['WALK', 'TRANSIT', 'BICYCLE', 'DRIVE'];
 
 type Item = { id: string; main: string; secondary: string };
 type Recent = { label: string; loc: LatLng };
@@ -108,15 +111,24 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
         <button type="button" className="ps-done" onClick={close}>Listo</button>
       </div>
 
-      <p className="ps-label" id="ps-mode">{isYou ? 'Vas en' : 'Va en'}</p>
-      <div className="ps-modes" role="radiogroup" aria-labelledby="ps-mode">
-        {MODES.map((m) => (
-          <button key={m} type="button" role="radio" aria-checked={person.mode === m} onClick={() => onChange({ ...person, mode: m })}>
-            <ModeIcon mode={m} />
-            <span>{MODE_LABEL[m]}</span>
-          </button>
-        ))}
+      <p className="ps-label" id="ps-mode">{isYou ? 'Puedes ir' : 'Puede ir'}</p>
+      <div className="ps-modes" role="group" aria-labelledby="ps-mode">
+        {CAN.map((m) => {
+          const on = person.modes.includes(m);
+          // Siempre queda al menos uno marcado.
+          const toggle = () => {
+            const modes = CAN.filter((x) => (x === m ? !on : person.modes.includes(x)));
+            if (modes.length) onChange({ ...person, modes });
+          };
+          return (
+            <button key={m} type="button" role="checkbox" aria-checked={on} onClick={toggle}>
+              <ModeIcon mode={m} />
+              <span>{MODE_LABEL[m]}</span>
+            </button>
+          );
+        })}
       </div>
+      <p className="ps-hint">Marca todo lo que {isYou ? 'puedes' : 'puede'} usar: para cada sitio elegimos lo más rápido.</p>
 
       <label className="ps-label" htmlFor="ps-q">{isYou ? 'Sales de' : 'Sale de'}</label>
       <div className="ps-search">

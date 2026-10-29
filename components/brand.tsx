@@ -26,10 +26,10 @@ export const PLANS: { id: Plan; label: string; txt: string }[] = [
   { id: 'canas', label: 'Cañas', txt: 'unas cañas' },
   { id: 'cafe', label: 'Café', txt: 'un café' },
   { id: 'cenar', label: 'Cenar', txt: 'cenar' },
-  { id: 'copas', label: 'Copas', txt: 'unas copas' },
   { id: 'parque', label: 'Parque', txt: 'un parque' },
 ];
-export const planTxt = (p: Plan) => PLANS.find((x) => x.id === p)?.txt || 'veros';
+// Copas ya no se ofrece, pero los enlaces que ya se mandaron con ese plan siguen diciéndolo bien.
+export const planTxt = (p: Plan) => (p === 'copas' ? 'unas copas' : PLANS.find((x) => x.id === p)?.txt || 'veros');
 
 // Trazos de 24×24, compartidos por los iconos de React y los marcadores del mapa (que son HTML).
 export const PLAN_PATHS: Record<Plan, string[]> = {

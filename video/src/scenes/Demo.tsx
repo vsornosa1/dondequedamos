@@ -19,10 +19,10 @@ const NameFlip = ({ text, f, at }: { text: string; f: number; at: number }) => <
 const CTA_Y = SCREEN.h - 39;
 const SPOT = {
   row4: { x: 190, y: 459 },
-  walk: { x: 330, y: 212 },
+  bus: { x: 150, y: 212 }, // el chip de Bus/metro, que Yania desmarca: solo va andando
   pick: { x: 150, y: 379 },
-  canas: { x: 62, y: 294 },
-  cenar: { x: 195, y: 294 },
+  canas: { x: 70, y: 294 },
+  cenar: { x: 236, y: 294 },
   later: { x: 274, y: 444 },
   day: { x: 139, y: 412 },
   time: { x: 195, y: 484 },
@@ -67,7 +67,7 @@ export const DemoScene = ({ f }: { f: number }) => {
   const y = rise + drop;
 
   const taps: [number, { x: number; y: number }][] = [
-    [K.people.tap, SPOT.row4], [K.people.mode, SPOT.walk], [K.people.pick, SPOT.pick],
+    [K.people.tap, SPOT.row4], [K.people.mode, SPOT.bus], [K.people.pick, SPOT.pick],
     [K.plan.canas, SPOT.canas], [K.plan.cenar, SPOT.cenar], [K.plan.later, SPOT.later], [K.plan.day, SPOT.day], [K.plan.time, SPOT.time],
     [K.plan.search, SPOT.search], [K.share.tap, SPOT.share],
   ];
@@ -79,7 +79,7 @@ export const DemoScene = ({ f }: { f: number }) => {
         <PersonSheetView st={{
           open: sheetOpen,
           name: typed('Yania', f, K.people.name, 3),
-          mode: f >= K.people.mode ? 'WALK' : 'TRANSIT',
+          modes: f >= K.people.mode ? ['WALK'] : ['WALK', 'TRANSIT'],
           query: typed('Cabany', f, K.people.type, 3),
           caret: f >= K.people.type - 8 && f < K.people.pick && Math.floor(f / 8) % 2 === 0,
           results: enter(f, K.people.suggest, 8),

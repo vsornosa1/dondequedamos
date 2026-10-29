@@ -17,12 +17,14 @@
 
 Vicent, Jenny, Ángel y Yania son cuatro "blobs" con ojos, inspirados en la referencia que mandó Vicent. Cada uno lleva el color de su línea en la app: rojo, azul, verde y morado.
 
-| Persona | Sale de | Va en |
-|---|---|---|
-| Vicent | Benimaclet | bus/metro |
-| Jenny | Russafa | bici |
-| Ángel | Patraix | coche |
-| Yania | El Cabanyal | andando |
+| Persona | Sale de | Puede ir | La app elige |
+|---|---|---|---|
+| Vicent | Benimaclet | andando, bus/metro | bus/metro |
+| Jenny | Russafa | andando, bus/metro, bici | bici |
+| Ángel | Patraix | andando, bus/metro, coche | coche |
+| Yania | El Cabanyal | andando | andando |
+
+Cada uno marca lo que puede usar y la app elige, para cada sitio, lo más rápido. Yania solo va andando, y por eso el punto medio del mapa le sale tan caro.
 
 ## Datos
 

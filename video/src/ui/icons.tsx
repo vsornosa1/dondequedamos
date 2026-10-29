@@ -9,7 +9,6 @@ export const PLANS: { id: Plan; label: string; txt: string }[] = [
   { id: 'canas', label: 'Cañas', txt: 'unas cañas' },
   { id: 'cafe', label: 'Café', txt: 'un café' },
   { id: 'cenar', label: 'Cenar', txt: 'cenar' },
-  { id: 'copas', label: 'Copas', txt: 'unas copas' },
   { id: 'parque', label: 'Parque', txt: 'un parque' },
 ];
 export const planTxt = (p: Plan) => PLANS.find((x) => x.id === p)?.txt || 'veros';

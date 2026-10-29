@@ -13,10 +13,16 @@ import { api, listNames, load, nameOf, save, uid, wait, whenDate } from '@/lib/c
 import { encodeProposal } from '@/lib/share.js';
 import { routeForLink } from '@/lib/polyline.js';
 import { routeFor, routeIfReady } from '@/lib/routes';
-import type { Option, Person, Plan, Result, Sort, When } from '@/lib/types';
+import { DEFAULT_MODES } from '@/lib/core.js';
+import type { Mode, Option, Person, Plan, Result, Sort, When } from '@/lib/types';
 
-const newPerson = (): Person => ({ id: uid(), name: '', mode: 'TRANSIT', loc: null, label: '' });
+const newPerson = (): Person => ({ id: uid(), name: '', modes: [...DEFAULT_MODES] as Mode[], loc: null, label: '' });
 type Saved = Omit<Person, 'id'>;
+// Lo guardado antes de poder marcar varios transportes traía uno solo: andar, más el que eligió.
+const upgrade = (p: Saved & { mode?: Mode }): Saved => ({
+  name: p.name, loc: p.loc, label: p.label,
+  modes: p.modes?.length ? p.modes : p.mode ? (['WALK', ...(p.mode === 'WALK' ? [] : [p.mode])] as Mode[]) : ([...DEFAULT_MODES] as Mode[]),
+});
 
 export default function Planner() {
   const router = useRouter();
@@ -42,7 +48,7 @@ export default function Planner() {
     const m = window.location.hash.match(/^#q=([\w-]+)/);
     if (m) router.replace(`/p/${m[1]}`);
     const saved = load<Saved[] | null>('dq:ultimo', null);
-    if (saved?.length && saved.every((p) => p.loc)) setLast(saved);
+    if (saved?.length && saved.every((p) => p.loc)) setLast(saved.map(upgrade));
   }, [router]);
 
   useGSAP(() => {
@@ -78,7 +84,7 @@ export default function Planner() {
     try {
       const at = whenDate(when);
       const r = await api<Result>('/api/search', {
-        friends: people.map((p) => ({ mode: p.mode, loc: p.loc })), plan, when: at ? at.toISOString() : undefined,
+        friends: people.map((p) => ({ modes: p.modes, loc: p.loc })), plan, when: at ? at.toISOString() : undefined,
       });
       await wait(Math.max(0, 900 - (performance.now() - started))); // que la animación llegue a leerse
       const best = [...r.options].sort((a, b) => a.justo.score - b.justo.score)[0];
@@ -87,7 +93,7 @@ export default function Planner() {
       setSelectedId(best.id);
       setSort('justo');
       setView('results');
-      save('dq:ultimo', people.map(({ name, mode, loc, label }) => ({ name, mode, loc, label })));
+      save('dq:ultimo', people.map(({ name, modes, loc, label }) => ({ name, modes, loc, label })));
       window.scrollTo({ top: 0 });
     } catch (e) {
       setError((e as Error).message);
@@ -106,7 +112,7 @@ export default function Planner() {
     let live = true;
     const t = setTimeout(async () => {
       // Que el enlace lleve las rutas de todos: se esperan (4 s como mucho) antes de pedirlo.
-      const all = searched.people.map((p) => (p.loc ? routeFor(p.loc, p.mode, selected.loc, result.departureTime) : null));
+      const all = searched.people.map((p, i) => (p.loc ? routeFor(p.loc, selected.times[i].mode, selected.loc, result.departureTime) : null));
       await Promise.race([Promise.all(all), wait(4000)]);
       if (!live) return;
       const long = new URL(shareData(selected).url).pathname.slice(3);
@@ -120,17 +126,17 @@ export default function Planner() {
   function shareData(o: Option) {
     const s = searched!;
     // La ruta de cada uno que ya haya llegado, sin sus primeros metros: el enlace no lleva direcciones.
-    const routes = s.people.map((p) => {
-      const r = p.loc ? routeIfReady(p.loc, p.mode, o.loc) : null;
+    const routes = s.people.map((p, i) => {
+      const r = p.loc ? routeIfReady(p.loc, o.times[i].mode, o.loc) : null;
       return r ? routeForLink(r) : '';
     });
     const payload = {
       n: o.name, a: o.address, t: o.type, i: o.id, l: [o.loc.lat, o.loc.lng], pl: s.plan, w: result!.departureTime,
-      p: o.times.map((t, i) => [nameOf(s.people[i], i), s.people[i].mode, t.min]), r: routes,
+      p: o.times.map((t, i) => [nameOf(s.people[i], i), t.mode, t.min]), r: routes,
     };
     const long = encodeProposal(payload);
     const url = `${window.location.origin}/p/${shortIds.current.get(long) || long}`;
-    const lines = o.times.map((t, i) => `• ${nameOf(s.people[i], i)}: ${t.est ? '≈' : ''}${t.min} min ${MODE_TXT[s.people[i].mode]}`);
+    const lines = o.times.map((t, i) => `• ${nameOf(s.people[i], i)}: ${t.est ? '≈' : ''}${t.min} min ${MODE_TXT[t.mode]}`);
     const text = `📍 ¿Quedamos en ${o.name} para ${planTxt(s.plan)}?\n${o.address}\n\n⏱️ Lo que tarda cada uno:\n${lines.join('\n')}\n\nEs el sitio más justo para todos:`;
     return { url, text };
   }

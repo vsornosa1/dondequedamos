@@ -135,14 +135,15 @@ async function search(friends, rule, plan = 'cenar') {
   const modes = friends.map((f) => f.mode);
   const dep = new Date(Date.now() + 60_000).toISOString();
   const { cands, ringRadius } = candidates(friends, rule.estimate);
-  const tA = await timesTo(google, friends, cands, dep);
+  const one = friends.map((f) => ({ ...f, modes: [f.mode] })); // este script compara reglas con un transporte por persona
+  const tA = (await timesTo(google, one, cands, dep)).times;
   const colsA = cands.map((_, j) => column(tA, j));
   const z = rule.zone(colsA, modes);
   const radius = Math.round(clamp(ringRadius * 1.2, 500, 2500));
   const places = await google.nearby(cands[z], radius, PLANS[plan].types);
   const venues = pickVenues(places, cands[z], 12);
   const vLocs = venues.map((v) => ({ lat: v.location.latitude, lng: v.location.longitude }));
-  const tB = await timesTo(google, friends, vLocs, dep);
+  const tB = (await timesTo(google, one, vLocs, dep)).times;
   const colsB = venues.map((_, j) => column(tB, j));
   const ord = rule.order(colsB, modes);
   return { cands, colsA, z, venues, colsB, ord, top: ord[0] };

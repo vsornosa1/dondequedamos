@@ -39,7 +39,7 @@ export default function Results({ result, people, plan, when, selected, sort, on
     [result],
   );
   const lines = useMemo(() => selected.times.map((t, i) => ({
-    name: nameOf(people[i], i), mode: people[i].mode, min: t.min, est: t.est,
+    name: nameOf(people[i], i), mode: t.mode, min: t.min, est: t.est,
     ghost: result.midpoint.times[i]?.min ?? null, color: COLORS[i],
   })), [selected, people, result]);
 
@@ -103,7 +103,7 @@ export default function Results({ result, people, plan, when, selected, sort, on
 
       <Directions
         to={selected.loc} placeId={selected.id}
-        people={selected.times.map((t, i) => ({ name: nameOf(people[i], i), mode: people[i].mode, min: t.min, est: t.est, from: people[i].loc }))}
+        people={selected.times.map((t, i) => ({ name: nameOf(people[i], i), mode: t.mode, min: t.min, est: t.est, from: people[i].loc }))}
       />
 
       <details className="how">

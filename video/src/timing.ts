@@ -50,5 +50,9 @@ export const FROM = ['Benimaclet', 'Russafa', 'Patraix', 'El Cabanyal'];
 export const MODES = ['TRANSIT', 'BICYCLE', 'DRIVE', 'WALK'] as const;
 export type Mode = (typeof MODES)[number];
 
+// Lo que puede usar cada uno (la app elige el más rápido: el de MODES). Yania solo va andando.
+export const CAN: Mode[][] = [['WALK', 'TRANSIT'], ['WALK', 'TRANSIT', 'BICYCLE'], ['WALK', 'TRANSIT', 'DRIVE'], ['WALK']];
+export const DEFAULT_CAN: Mode[] = ['WALK', 'TRANSIT'];
+
 // The plan they settle on, after a first tap on Cañas.
 export const PLAN = 'cenar' as 'canas' | 'cafe' | 'cenar' | 'copas' | 'parque';

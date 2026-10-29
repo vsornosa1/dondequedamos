@@ -66,11 +66,14 @@ h1, h2 { text-wrap: balance; }
 .person-where { font-size: 15px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .person-where.missing { color: var(--danger); font-weight: 700; }
 .person-mode { display: grid; place-items: center; width: 46px; height: 46px; border-radius: var(--r-s); background: var(--tint); }
+/* Con varios transportes, sus iconos en pequeño (hasta cuatro, de dos en dos). */
+.person-mode.many { grid-template-columns: repeat(2, 18px); place-content: center; gap: 2px; }
+.person-mode.many .ico { width: 18px; height: 18px; }
 .add-person { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0; border: 0; background: none; font-weight: 800; text-align: left; }
 .add-person span { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 2px dashed var(--ink-2); border-radius: 50%; color: var(--ink-2); font-weight: 800; font-size: 18px; }
 .recall { width: 100%; margin-top: 10px; padding: 12px 14px; border: 2px solid var(--rule); border-radius: var(--r-s); background: var(--paper); font-weight: 700; text-align: left; }
 
-.plans { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
 .plans button { display: grid; justify-items: center; align-content: center; gap: 5px; min-height: 72px; padding: 8px 2px; border: 2px solid var(--rule); border-radius: var(--r-s); background: var(--paper); font-size: 13px; font-weight: 800; }
 .plans button[aria-checked="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
 .plans .ico { width: 28px; height: 28px; }
@@ -99,6 +102,7 @@ h1, h2 { text-wrap: balance; }
 .when-sum .ico { margin-top: 1px; color: var(--ink); }
 .when-sum b { display: block; margin-bottom: 1px; font-size: 16px; font-weight: 800; color: var(--ink); text-wrap: balance; }
 .hint { font-size: 14px; color: var(--ink-2); }
+.plan-note { margin-top: 10px; }
 .privacy { padding: 4px 4px 0; font-size: 14px; color: var(--ink-2); }
 
 /* ---------- Barra inferior ---------- */
@@ -128,7 +132,8 @@ h1, h2 { text-wrap: balance; }
 .ps-name::placeholder { color: var(--ink); opacity: .5; }
 .ps-done { min-height: 44px; padding: 0 16px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 800; }
 .ps-label { display: block; margin: 0 0 8px; font-weight: 800; font-size: 15px; }
-.ps-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 18px; }
+.ps-modes { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.ps-hint { margin: 0 0 18px; font-size: 13px; color: var(--ink-2); }
 .ps-modes button { display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 66px; padding: 6px 2px; border: 2px solid var(--rule); border-radius: var(--r-s); background: var(--paper); font-size: 13px; font-weight: 800; }
 .ps-modes button[aria-checked="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
 .ps-modes .ico { width: 26px; height: 26px; }
@@ -232,6 +237,12 @@ h1, h2 { text-wrap: balance; }
 .way-go .ico { width: 16px; height: 16px; }
 .way:active .way-go { background: var(--rule); }
 .shared .map, .shared .ways { margin-bottom: 12px; }
+
+/* Cambiar de sitio desde el propio mapa, sin subir hasta las tarjetas. */
+.map-wrap { position: relative; }
+.map-switch { position: absolute; top: 10px; left: 10px; right: 52px; display: flex; align-items: center; min-height: 44px; border-radius: 999px; background: var(--panel); box-shadow: 0 2px 8px rgba(0, 0, 0, .25); }
+.map-switch button { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; }
+.map-switch span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font-weight: 800; font-size: 14px; }
 
 .how { padding: 0 16px; border-radius: var(--r-m); background: var(--panel); }
 .how summary { display: flex; align-items: center; min-height: 52px; font-weight: 800; list-style: none; cursor: pointer; }

@@ -1,6 +1,6 @@
 # Post de LinkedIn
 
-🍻 ¿Quién se come el viaje?
+🍽️ ¿Quién se come el viaje?
 
 Quedáis cuatro en València, alguien propone «el punto medio»… y siempre hay uno que tarda el triple que el resto.
 
@@ -10,10 +10,11 @@ En el «Buildeando cosas útiles» de hoy: ¿Dónde quedamos?
 
 Así que he hecho una web que busca el sitio donde todos tardáis lo mismo, cada uno con su transporte:
 
-🚇 Cada uno dice desde dónde sale y cómo va: metro, bici, coche o andando.
-🍺 Eliges el plan: cañas, café, cenar, copas o parque.
+🚇 Cada uno dice desde dónde sale y cómo puede moverse (andando, metro, bici o coche), y la app elige lo más rápido para cada uno.
+🍻 Eliges el plan: cañas, café, cenar o parque. Con cañas no contamos el coche 😉
 🕘 Y cuándo. Calcula con el transporte y el tráfico de esa hora.
 📍 Te da el sitio más justo, con fotos e información, y lo mandas al grupo con un toque.
+🗺️ Y a cada uno le marca su ruta, que se abre en Google Maps.
 
 🔒 Sin descargas ni registro. No guarda ninguna dirección: se usan para calcular y se olvidan.
 
@@ -25,8 +26,12 @@ Recuerda: es gratis.
 
 #València #NextJS #React #GSAP #OpenStreetMap #BuildInPublic
 
+## Primer comentario
+
+Cada búsqueda se paga a Google Maps. Si te es útil, puedes apoyarla aquí: github.com/sponsors/vsornosa1
+
 ## Notas
 
 - Las dos primeras líneas son las que se ven antes de «…ver más». El gancho es el mismo que abre el vídeo.
-- Si quieres pedir apoyo, hazlo en un primer comentario y no en el post: «Cada búsqueda se paga a Google Maps. Si te es útil, puedes apoyarla aquí: github.com/sponsors/vsornosa1».
-- Portada del vídeo: `out/poster.png`.
+- El apoyo va en el primer comentario y no en el post, para no restarle alcance.
+- Vídeo: `out/dondequedamos-demo.mp4` (60 s, 4:5, 1728x2160). Portada: `out/poster.png`.
