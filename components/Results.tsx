@@ -105,7 +105,9 @@ export default function Results({ result, people, plan, when, selected, sort, on
         <p>
           Probamos varias zonas entre vosotros con los horarios de transporte y el tráfico reales de esa hora, buscamos los sitios
           mejor valorados de la zona que sale más equilibrada y calculamos lo que tarda cada uno hasta cada sitio. «Más justo»
-          pone primero el sitio donde quien más tarda, tarda menos, y donde menos diferencia hay entre vosotros.
+          pone primero el sitio donde quien más tarda, tarda menos, sin alargar el viaje al resto por nada: un minuto más para
+          quien más tarda solo compensa si la media del grupo baja más de dos. Por eso, si unos vais andando y otros en coche,
+          suele ser el coche el que se acerca.
         </p>
       </details>
     </div>
