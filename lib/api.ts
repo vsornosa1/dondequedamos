@@ -16,12 +16,13 @@ export function limited(req: NextRequest, bucket: string, max: number, windowMs:
   return false;
 }
 
-// Sin clave fuera de producción se usan datos simulados, para poder trabajar en la interfaz.
+// Sin clave (o con la clave «mock») fuera de producción se usan datos simulados, para trabajar en la interfaz
+// sin gastar: `npm run dev:mock` arranca así aunque el .env tenga la clave de verdad.
 export function getGoogle() {
   const key = process.env.GOOGLE_MAPS_API_KEY;
-  if (key) return makeGoogle(key);
-  if (process.env.NODE_ENV !== 'production') return makeGoogle('mock', mockFetch as unknown as typeof fetch);
-  return null;
+  const dev = process.env.NODE_ENV !== 'production';
+  if (dev && (!key || key === 'mock')) return makeGoogle('mock', mockFetch as unknown as typeof fetch);
+  return key ? makeGoogle(key) : null;
 }
 
 export const json = (data: unknown, status = 200, headers?: HeadersInit) => NextResponse.json(data, { status, headers });

@@ -8,6 +8,8 @@
   "scripts": {
     "predev": "node scripts/copy-map-worker.mjs",
     "dev": "next dev",
+    "predev:mock": "node scripts/copy-map-worker.mjs",
+    "dev:mock": "node scripts/dev-mock.mjs",
     "prebuild": "node scripts/copy-map-worker.mjs",
     "build": "next build",
     "start": "next start",

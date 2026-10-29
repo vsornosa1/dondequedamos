@@ -35,6 +35,7 @@ export type Venue = {
 export type Proposal = {
   name: string; address: string; type: string; placeId: string | null; loc: LatLng | null;
   plan: Plan; when: string | null; people: { name: string; mode: Mode; min: number }[];
+  routes: ([number, number][] | null)[]; // la de cada uno, sin sus primeros metros ([lng, lat])
 };
 
 export type Line = { name: string; mode: Mode; min: number; est?: boolean; ghost?: number | null; color: string };

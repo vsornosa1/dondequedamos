@@ -218,6 +218,21 @@ h1, h2 { text-wrap: balance; }
 .pin-meet { width: 44px; height: 54px; cursor: pointer; filter: drop-shadow(0 3px 4px rgba(0, 0, 0, .35)); }
 .pin-meet svg { display: block; width: 100%; height: 100%; }
 
+/* Cómo llega cada uno: una fila por persona que abre su ruta en Google Maps. */
+.ways { padding: 16px 16px 12px; border-radius: var(--r-m); background: var(--panel); }
+.ways h2 { margin-bottom: 4px; font-weight: 800; font-size: 20px; line-height: 1.2; letter-spacing: -.01em; }
+.ways ul { margin: 0; padding: 0; list-style: none; }
+.ways li + li .way { border-top: 1px solid var(--rule); }
+.way { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 64px; padding: 8px 0; color: inherit; text-decoration: none; }
+.way-main { display: grid; min-width: 0; }
+.way-name { font-weight: 800; font-size: 17px; line-height: 1.25; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.way-how { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-2); }
+.way-how .ico { width: 18px; height: 18px; }
+.way-go { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border-radius: 999px; background: var(--tint); font-weight: 800; font-size: 14px; white-space: nowrap; }
+.way-go .ico { width: 16px; height: 16px; }
+.way:active .way-go { background: var(--rule); }
+.shared .map, .shared .ways { margin-bottom: 12px; }
+
 .how { padding: 0 16px; border-radius: var(--r-m); background: var(--panel); }
 .how summary { display: flex; align-items: center; min-height: 52px; font-weight: 800; list-style: none; cursor: pointer; }
 .how summary::-webkit-details-marker { display: none; }

@@ -1,10 +1,14 @@
 'use client';
 // Lo que ve quien recibe el enlace en el grupo: el sitio, lo que tarda cada uno y cómo llegar.
 import { useRef } from 'react';
+import dynamic from 'next/dynamic';
 import Diagram from './Diagram';
+import Directions from './Directions';
 import { COLORS, Mark, PlanIcon, SponsorLink, planTxt } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
 import type { Proposal } from '@/lib/types';
+
+const RouteMap = dynamic(() => import('./RouteMap'), { ssr: false, loading: () => <div className="map" /> });
 
 export default function SharedProposal({ p }: { p: Proposal }) {
   const root = useRef<HTMLDivElement>(null);
@@ -46,10 +50,17 @@ export default function SharedProposal({ p }: { p: Proposal }) {
         <p className="insight">Cada línea mide lo que tarda cada uno en llegar. Es el sitio más justo para todos.</p>
       </section>
 
+      {p.loc && (
+        <>
+          <RouteMap to={p.loc} plan={p.plan} name={p.name} people={p.people} routes={p.routes} />
+          <Directions to={p.loc} placeId={p.placeId} people={p.people} fromHere />
+        </>
+      )}
+
       <footer className="foot">
         <SponsorLink />
         <p><strong>Fet a la terreta.</strong></p>
-        <p>Tiempos y sitios de Google Maps.</p>
+        <p>Tiempos y sitios de Google Maps. Mapa de OpenFreeMap y OpenStreetMap.</p>
       </footer>
 
       <div className="bar">

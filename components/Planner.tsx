@@ -11,6 +11,8 @@ import { COLORS, MODE_TXT, Mark, ShareIcon, CopyIcon, SponsorLink, planTxt } fro
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
 import { api, listNames, load, nameOf, save, uid, wait, whenDate } from '@/lib/client';
 import { encodeProposal } from '@/lib/share.js';
+import { routeForLink } from '@/lib/polyline.js';
+import { routeFor, routeIfReady } from '@/lib/routes';
 import type { Option, Person, Plan, Result, Sort, When } from '@/lib/types';
 
 const newPerson = (): Person => ({ id: uid(), name: '', mode: 'TRANSIT', loc: null, label: '' });
@@ -100,21 +102,31 @@ export default function Planner() {
   // móvil se abre al instante (Safari lo bloquea si antes hay que esperar a la red).
   const shortIds = useRef(new Map<string, string>());
   useEffect(() => {
-    if (!selected || !searched) return;
-    const t = setTimeout(() => {
+    if (!selected || !searched || !result) return;
+    let live = true;
+    const t = setTimeout(async () => {
+      // Que el enlace lleve las rutas de todos: se esperan (4 s como mucho) antes de pedirlo.
+      const all = searched.people.map((p) => (p.loc ? routeFor(p.loc, p.mode, selected.loc, result.departureTime) : null));
+      await Promise.race([Promise.all(all), wait(4000)]);
+      if (!live) return;
       const long = new URL(shareData(selected).url).pathname.slice(3);
       if (shortIds.current.has(long) || long.length <= 8) return;
       fetch('/api/share', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ d: long }) })
         .then((r) => (r.ok ? r.json() : null)).then((d) => d?.id && shortIds.current.set(long, d.id)).catch(() => {});
     }, 700);
-    return () => clearTimeout(t);
+    return () => { live = false; clearTimeout(t); };
   }, [selected?.id, searched]); // eslint-free: shareData solo lee estado ya incluido aquí
 
   function shareData(o: Option) {
     const s = searched!;
+    // La ruta de cada uno que ya haya llegado, sin sus primeros metros: el enlace no lleva direcciones.
+    const routes = s.people.map((p) => {
+      const r = p.loc ? routeIfReady(p.loc, p.mode, o.loc) : null;
+      return r ? routeForLink(r) : '';
+    });
     const payload = {
       n: o.name, a: o.address, t: o.type, i: o.id, l: [o.loc.lat, o.loc.lng], pl: s.plan, w: result!.departureTime,
-      p: o.times.map((t, i) => [nameOf(s.people[i], i), s.people[i].mode, t.min]),
+      p: o.times.map((t, i) => [nameOf(s.people[i], i), s.people[i].mode, t.min]), r: routes,
     };
     const long = encodeProposal(payload);
     const url = `${window.location.origin}/p/${shortIds.current.get(long) || long}`;

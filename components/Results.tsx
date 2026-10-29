@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Sign from './Sign';
 import Diagram from './Diagram';
+import Directions from './Directions';
 import OptionsCarousel from './OptionsCarousel';
 import { BackIcon, COLORS, planTxt } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
@@ -98,6 +99,11 @@ export default function Results({ result, people, plan, when, selected, sort, on
       <MeetMap
         people={people} midpoint={result.midpoint.loc} options={options} selected={selected} plan={plan}
         onSelect={onSelect} onOpen={onOpenVenue} departure={result.departureTime}
+      />
+
+      <Directions
+        to={selected.loc} placeId={selected.id}
+        people={selected.times.map((t, i) => ({ name: nameOf(people[i], i), mode: people[i].mode, min: t.min, est: t.est, from: people[i].loc }))}
       />
 
       <details className="how">
