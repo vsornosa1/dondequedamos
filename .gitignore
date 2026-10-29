@@ -8,3 +8,13 @@ next-env.d.ts
 public/maplibre-gl-worker.mjs
 .env*
 docs/
+# Vídeo de presentación (Remotion): solo el código y el MP4 final
+video/out/*
+!video/out/dondequedamos-demo.mp4
+!video/out/poster.png
+video/checks
+video/music/*.wav
+video/public/music.wav
+video/public/music-*.wav
+video/public/map-*.png
+video/public/maplibre-gl-worker.mjs

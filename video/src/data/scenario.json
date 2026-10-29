@@ -1,0 +1,243 @@
+{
+ "people": [
+  {
+   "name": "Vicent",
+   "from": "Benimaclet",
+   "loc": {
+    "lat": 39.4876,
+    "lng": -0.357
+   },
+   "mode": "TRANSIT"
+  },
+  {
+   "name": "Jenny",
+   "from": "Russafa",
+   "loc": {
+    "lat": 39.4616,
+    "lng": -0.3749
+   },
+   "mode": "BICYCLE"
+  },
+  {
+   "name": "Ángel",
+   "from": "Patraix",
+   "loc": {
+    "lat": 39.4607,
+    "lng": -0.3962
+   },
+   "mode": "DRIVE"
+  },
+  {
+   "name": "Yania",
+   "from": "El Cabanyal",
+   "loc": {
+    "lat": 39.4699,
+    "lng": -0.3283
+   },
+   "mode": "WALK"
+  }
+ ],
+ "midpoint": {
+  "loc": {
+   "lat": 39.46995,
+   "lng": -0.3641
+  },
+  "times": [
+   {
+    "min": 18,
+    "est": false
+   },
+   {
+    "min": 10,
+    "est": false
+   },
+   {
+    "min": 16,
+    "est": false
+   },
+   {
+    "min": 54,
+    "est": false
+   }
+  ],
+  "stats": {
+   "max": 54,
+   "min": 10,
+   "avg": 24.5,
+   "gap": 44,
+   "score": 69.4
+  }
+ },
+ "zone": {
+  "lat": 39.467942361712026,
+  "lng": -0.3424431498143165,
+  "radius": 1065
+ },
+ "options": [
+  {
+   "id": "v8",
+   "name": "La Clotxa",
+   "type": "Restaurante",
+   "times": [
+    17,
+    20,
+    21,
+    18
+   ],
+   "justo": {
+    "max": 21,
+    "min": 17,
+    "avg": 19,
+    "gap": 4,
+    "score": 22.4
+   },
+   "rapido": {
+    "max": 21,
+    "min": 17,
+    "avg": 19,
+    "gap": 4,
+    "score": 20
+   },
+   "loc": {
+    "lat": 39.47346641071534,
+    "lng": -0.34039128987904005
+   },
+   "rating": 4.8,
+   "ratings": 346,
+   "price": "PRICE_LEVEL_EXPENSIVE",
+   "openNow": true
+  },
+  {
+   "id": "v0",
+   "name": "La Pepica del Barrio",
+   "type": "Restaurante",
+   "times": [
+    20,
+    19,
+    22,
+    22
+   ],
+   "justo": {
+    "max": 22,
+    "min": 19,
+    "avg": 20.75,
+    "gap": 3,
+    "score": 23.05
+   },
+   "rapido": {
+    "max": 22,
+    "min": 19,
+    "avg": 20.75,
+    "gap": 3,
+    "score": 21.5
+   },
+   "loc": {
+    "lat": 39.467942361712026,
+    "lng": -0.3424431498143165
+   },
+   "rating": 4,
+   "ratings": 50,
+   "price": "PRICE_LEVEL_MODERATE",
+   "openNow": false
+  },
+  {
+   "id": "v2",
+   "name": "Casa Montaña",
+   "type": "Restaurante",
+   "times": [
+    20,
+    20,
+    21,
+    13
+   ],
+   "justo": {
+    "max": 21,
+    "min": 13,
+    "avg": 18.5,
+    "gap": 8,
+    "score": 23.8
+   },
+   "rapido": {
+    "max": 21,
+    "min": 13,
+    "avg": 18.5,
+    "gap": 8,
+    "score": 20.5
+   },
+   "loc": {
+    "lat": 39.46767511698503,
+    "lng": -0.33749253465662554
+   },
+   "rating": 4.2,
+   "ratings": 124,
+   "price": "PRICE_LEVEL_MODERATE",
+   "openNow": true
+  },
+  {
+   "id": "v6",
+   "name": "Taberna Ultramarinos",
+   "type": "Taberna",
+   "times": [
+    19,
+    18,
+    21,
+    25
+   ],
+   "justo": {
+    "max": 25,
+    "min": 18,
+    "avg": 20.75,
+    "gap": 7,
+    "score": 27.45
+   },
+   "rapido": {
+    "max": 25,
+    "min": 18,
+    "avg": 20.75,
+    "gap": 7,
+    "score": 22.5
+   },
+   "loc": {
+    "lat": 39.46834062799522,
+    "lng": -0.3448702783467604
+   },
+   "rating": 4.6,
+   "ratings": 272,
+   "price": "PRICE_LEVEL_MODERATE",
+   "openNow": true
+  },
+  {
+   "id": "v5",
+   "name": "El Rincón de Paco",
+   "type": "Bar de tapas",
+   "times": [
+    22,
+    18,
+    22,
+    33
+   ],
+   "justo": {
+    "max": 33,
+    "min": 18,
+    "avg": 23.75,
+    "gap": 15,
+    "score": 38.25
+   },
+   "rapido": {
+    "max": 33,
+    "min": 18,
+    "avg": 23.75,
+    "gap": 15,
+    "score": 27.5
+   },
+   "loc": {
+    "lat": 39.46519556865614,
+    "lng": -0.34752466127948806
+   },
+   "rating": 4.5,
+   "ratings": 235,
+   "price": "PRICE_LEVEL_MODERATE",
+   "openNow": false
+  }
+ ]
+}
