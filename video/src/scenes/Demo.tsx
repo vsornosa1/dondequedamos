@@ -74,7 +74,7 @@ export const DemoScene = ({ f }: { f: number }) => {
 
   return (
     <AbsoluteFill>
-      <Phone cam={cam} y={y} url={chatIn > 0.5 ? '' : 'dondequedamos.vercel.app'} time={f > K.share.chat ? '19:44' : '19:42'}>
+      <Phone cam={cam} y={y} url={chatIn > 0.5 ? '' : 'dondequedamos.app'} time={f > K.share.chat ? '19:44' : '19:42'}>
         {!showResult && <PlanScreen st={planState(f)} />}
         <PersonSheetView st={{
           open: sheetOpen,

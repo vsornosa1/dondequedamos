@@ -3,7 +3,9 @@
 #   sh scripts/render.sh                    # PNG frames -> out/video.mp4 -> out/dondequedamos-demo.mp4
 #   sh scripts/render.sh mux public/music-rumba.wav out/dondequedamos-demo-rumba.mp4
 # Frames are PNG, not Remotion's default JPEG at 80 %: the JPEG blocks made the blobs look
-# pixelated. The video is encoded once, without sound, so a different score is only a remux.
+# pixelated. They are rendered at 1.6x (1728x2160, still 4:5 and within LinkedIn's limits):
+# video keeps colour at half resolution, and at 1080 wide Vicent's red edges came out stepped.
+# The video is encoded once, without sound, so a different score is only a remux.
 set -e
 cd "$(dirname "$0")/.."
 mux() {
@@ -14,7 +16,7 @@ mux() {
 }
 if [ "$1" = mux ]; then mux "$2" "$3"; exit; fi
 rm -rf out/frames
-npx remotion render src/index.ts Main out/frames --sequence --image-format=png --props='{"music":false}' --gl=angle --log=error
+npx remotion render src/index.ts Main out/frames --sequence --image-format=png --scale=1.6 --props='{"music":false}' --gl=angle --log=error
 ffmpeg -y -hide_banner -loglevel error -framerate 30 -i out/frames/element-%04d.png \
   -vf "scale=out_color_matrix=bt709:out_range=tv:flags=lanczos+accurate_rnd+full_chroma_int,format=yuv420p" \
   -c:v libx264 -preset slow -crf 15 -tune animation -profile:v high \

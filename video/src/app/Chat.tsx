@@ -78,7 +78,7 @@ export const ChatScreen = ({ sent, replies, scroll }: { sent: number; replies: n
               <div style={{ fontWeight: 800 }}>📍 ¿Quedamos en {best.name} para {planTxt(PLAN)}?</div>
               <div style={{ marginTop: 6 }}>⏱️ Lo que tarda cada uno:</div>
               {best.times.map((min, i) => <div key={i}>• {NAMES[i]}: {min} min {MODE_TXT[MODES[i]]}</div>)}
-              <div style={{ marginTop: 6 }}>Es el sitio más justo para todos: <span style={{ color: '#1F6FD1', textDecoration: 'underline' }}>dondequedamos.vercel.app/p/k3Rw9Tq</span></div>
+              <div style={{ marginTop: 6 }}>Es el sitio más justo para todos: <span style={{ color: '#1F6FD1', textDecoration: 'underline' }}>dondequedamos.app/p/k3Rw9Tq</span></div>
               <div style={{ textAlign: 'right', fontSize: 11, color: c.ink2, marginTop: 2 }}>19:44 ✓✓</div>
             </div>
           </div>

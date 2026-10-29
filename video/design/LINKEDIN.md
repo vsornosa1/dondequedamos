@@ -21,7 +21,7 @@ Fet a la terreta, para acabar con el «¿y si mejor quedamos en mi barrio?» �
 
 Pruébala y etiqueta aquí abajo a quien siempre se come el viaje 👇
 Recuerda: es gratis.
-👉 https://dondequedamos.vercel.app
+👉 https://dondequedamos.app
 
 #València #NextJS #React #GSAP #OpenStreetMap #BuildInPublic
 

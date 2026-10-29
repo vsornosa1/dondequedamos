@@ -8,7 +8,7 @@
 
 ## Formato
 
-- 4:5 vertical, 1080x1350, 30 fps: el mismo formato que el vídeo de Aparcat (10k visualizaciones), y el que más ocupa en el feed del móvil.
+- 4:5 vertical, 30 fps: el mismo formato que el vídeo de Aparcat (10k visualizaciones), y el que más ocupa en el feed del móvil. Se diseña a 1080x1350 y se exporta a 1728x2160, para que los bordes de colores saturados no salgan escalonados.
 - Unos 59 s. Solo música, sin voz.
 - Música original y animada: house mediterráneo a 120 BPM (`music/score.py`); un compás son 60 fotogramas. La primera versión, una rumba, sigue en `music/score_rumba.py` como alternativa.
 - Ritmo de lectura: cada texto se queda al menos `palabras / 3 + 1` s.
@@ -44,4 +44,4 @@ Es la identidad de la app: señalética de punto de encuentro.
 
 ## Cierre (CTA, como el de Aparcat)
 
-Logo, `dondequedamos.vercel.app`, QR, "Gratis · sin registro", "Fet a la terreta" y los créditos de los datos.
+Logo, `dondequedamos.app`, QR, "Gratis · sin registro", "Fet a la terreta" y los créditos de los datos.

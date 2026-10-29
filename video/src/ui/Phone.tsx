@@ -18,7 +18,7 @@ export const toFrame = (x: number, y: number) => ({ x: SCREEN.left + x * PHONE.s
 
 type Cam = { s?: number; x?: number; y?: number }; // extra zoom around a frame point, plus a pan
 
-export const Phone = ({ children, cam = {}, y = 0, url = 'dondequedamos.vercel.app', time = '19:42', chrome = true }: {
+export const Phone = ({ children, cam = {}, y = 0, url = 'dondequedamos.app', time = '19:42', chrome = true }: {
   children: React.ReactNode; cam?: Cam; y?: number; url?: string; time?: string; chrome?: boolean;
 }) => {
   const s = cam.s ?? 1;

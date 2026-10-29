@@ -1,6 +1,6 @@
 # Vídeo de lanzamiento
 
-La demo de LinkedIn de ¿Dónde quedamos?: 4:5 (1080x1350), 60 s, con música original sintetizada. Se hizo con Remotion y la skill motion-video.
+La demo de LinkedIn de ¿Dónde quedamos?: 4:5, 60 s, con música original sintetizada. Se diseña a 1080x1350 y se exporta a 1728x2160. Se hizo con Remotion y la skill motion-video.
 
 - `design/BRIEF.md`: el brief.
 - `design/SCRIPT.md`: el guion por beats.
@@ -22,7 +22,7 @@ sh music/master.sh      # exporta los cortes, sintetiza la música (house) y la 
 sh scripts/render.sh    # fotogramas PNG, vídeo sin sonido (out/video.mp4) y out/dondequedamos-demo.mp4
 ```
 
-Los fotogramas se exportan en PNG y no en el JPEG al 80 % que usa Remotion por defecto: el JPEG dejaba los avatares pixelados.
+Los fotogramas se exportan en PNG y no en el JPEG al 80 % que usa Remotion por defecto: el JPEG dejaba los avatares pixelados. Y se renderizan a 1,6x: el vídeo guarda el color a la mitad de resolución, y a 1080 de ancho el borde rojo de Vicent salía escalonado.
 
 ## Las dos músicas
 

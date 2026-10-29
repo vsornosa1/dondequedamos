@@ -65,7 +65,7 @@ export const EndScene = ({ f }: { f: number }) => {
       </div>
 
       <div style={{ position: 'absolute', left: 0, right: 0, top: 360, textAlign: 'center', fontFamily: mono, fontWeight: 700, fontSize: 54, color: c.paper, letterSpacing: '-0.01em', ...riseStyle(f, K.end.url) }}>
-        dondequedamos.vercel.app
+        dondequedamos.app
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 440, textAlign: 'center', fontFamily: font, fontWeight: 700, fontSize: 38, color: '#A9B8CC', ...riseStyle(f, K.end.tag) }}>
         El sitio más justo para quedar.
@@ -75,7 +75,7 @@ export const EndScene = ({ f }: { f: number }) => {
         position: 'absolute', left: 540 - 130, top: 520, width: 260, height: 260, borderRadius: 26, background: c.paper, display: 'grid', placeItems: 'center',
         transform: `scale(${pop(f, K.end.qr, 16, 1.8)})`,
       }}>
-        <QR text="https://dondequedamos.vercel.app" size={228} />
+        <QR text="https://dondequedamos.app" size={228} />
       </div>
       <div style={{ position: 'absolute', left: 0, right: 0, top: 806, textAlign: 'center', fontFamily: font, fontWeight: 900, fontSize: 40, color: c.paper, ...riseStyle(f, K.end.free) }}>
         Gratis<span style={{ display: 'inline-block', width: '0.2em', height: '0.2em', margin: '0 0.38em', borderRadius: '50%', background: c.paper, verticalAlign: '0.22em' }} />sin registro
