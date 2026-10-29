@@ -63,7 +63,7 @@ export default function OptionsCarousel({ options, selectedId, sort, onSelect }:
           <span className="card-fig">
             {sort === 'rapido'
               ? <><b>{Math.round(o.rapido.avg)} min</b>de media</>
-              : <><b>±{Math.round(o.justo.gap)} min</b>de diferencia</>}
+              : <><b>{Math.round(o.justo.max)} min</b>como mucho</>}
           </span>
           {/* Como en el diagrama: el sitio a la derecha y cada uno más lejos cuanto más tarda. */}
           <span className="strip" aria-hidden="true">
