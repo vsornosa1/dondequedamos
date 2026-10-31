@@ -15,7 +15,10 @@ export async function redis(cmd: (string | number)[]) {
   return (await post('', cmd)).result as unknown;
 }
 
-// Varios comandos en una sola petición.
+// Varios comandos en una sola petición. Si alguno falla, falla todo: quien cuenta no puede fiarse a medias.
 export async function pipeline(cmds: (string | number)[][]) {
-  return ((await post('/pipeline', cmds)) as { result: unknown }[]).map((r) => r.result);
+  const out = (await post('/pipeline', cmds)) as { result?: unknown; error?: string }[];
+  const bad = out.find((r) => r.error);
+  if (bad) throw new Error(`Upstash: ${bad.error}`);
+  return out.map((r) => r.result);
 }
