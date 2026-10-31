@@ -2,12 +2,23 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { makeGoogle } from './google.js';
 import { mockFetch } from './mockGoogle.js';
+import { pipeline, redisEnabled } from './redis';
 
 const hits = new Map<string, number[]>();
 
-export function limited(req: NextRequest, bucket: string, max: number, windowMs: number) {
+// Límite por IP. Con Upstash se cuenta en Redis (ventana fija), compartido entre todas las instancias de
+// Vercel: en memoria cada instancia lleva su propia cuenta y se pierde al reiniciarse, así que no frena.
+// Si Redis falla, se sigue contando en memoria antes que dejar pasar todo o bloquear a todos.
+export async function limited(req: NextRequest, bucket: string, max: number, windowMs: number) {
   const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'anon';
   const k = `${bucket}:${ip}`, now = Date.now();
+  if (redisEnabled()) {
+    const key = `rl:${k}:${Math.floor(now / windowMs)}`;
+    try {
+      const [n] = await pipeline([['INCR', key], ['EXPIRE', key, Math.ceil(windowMs / 1000)]]);
+      return Number(n) > max;
+    } catch (e) { console.error(e); }
+  }
   const arr = (hits.get(k) || []).filter((t) => now - t < windowMs);
   if (arr.length >= max) return true;
   arr.push(now);

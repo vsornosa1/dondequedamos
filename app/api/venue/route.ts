@@ -12,7 +12,7 @@ const euros = (m?: Money) => (m?.units ? `${m.units} ${m.currencyCode === 'EUR' 
 
 // Ficha de un sitio con fotos. Se cachea en la CDN: los datos de un bar cambian poco.
 export async function GET(req: NextRequest) {
-  if (limited(req, 've', 60, 600_000)) return tooMany('Demasiadas consultas, espera un poco.');
+  if (await limited(req, 've', 60, 600_000)) return tooMany('Demasiadas consultas, espera un poco.');
   const google = getGoogle();
   if (!google) return noKey();
   const id = req.nextUrl.searchParams.get('id') || '';
