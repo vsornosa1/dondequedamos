@@ -55,8 +55,8 @@ function otpServer(seen = [], fail = () => false) {
     const body = JSON.parse(init.body);
     seen.push(body);
     if (fail(body)) return { ok: false, status: 500, json: async () => ({}) };
-    const { from, to } = body.variables;
-    const a = from.location.coordinate, b = to.location.coordinate;
+    // Las coordenadas van escritas en la consulta: origin primero, destination después.
+    const [a, b] = [...body.query.matchAll(/latitude: (-?[\d.]+), longitude: (-?[\d.]+)/g)].map((m) => ({ latitude: Number(m[1]), longitude: Number(m[2]) }));
     const walk = encodePolyline([[a.longitude, a.latitude], [a.longitude, b.latitude]]);
     const bus = encodePolyline([[a.longitude, b.latitude], [b.longitude, b.latitude]]);
     return ok({ data: { planConnection: { edges: [
@@ -72,9 +72,8 @@ test('OTP: planConnection con coordenadas y hora de salida; gana el itinerario d
   const seen = [];
   const free = makeFreeRouting({ otp: 'http://otp:8080/otp/gtfs/v1', fetchFn: otpServer(seen) });
   const r = await free.route(RUSSAFA, CAMPANAR, 'TRANSIT', AT);
-  assert.match(seen[0].query, /planConnection\(origin: \$from, destination: \$to, dateTime: \{ earliestDeparture: \$at \}/);
-  assert.deepEqual(seen[0].variables.from, { location: { coordinate: { latitude: RUSSAFA.lat, longitude: RUSSAFA.lng } } });
-  assert.equal(seen[0].variables.at, AT);
+  assert.match(seen[0].query, /planConnection\(origin: \{ location: \{ coordinate: \{ latitude: 39\.461600, longitude: -0\.374900 \} \} \}, destination: \{ location: \{ coordinate: \{ latitude: 39\.484000, longitude: -0\.399000 \} \} \}, dateTime: \{ earliestDeparture: "2026-11-06T19:00:00Z" \}, first: 3\)/);
+  assert.match(seen[0].query, /edges \{ node \{ start end duration legs \{ legGeometry \{ points \} \} \} \}/);
   assert.equal(r.min, 25); // 15 + 30 de espera de más pierde contra 25
   // Los tramos (andar + bus) se unen en un solo trazado.
   assert.deepEqual(decodePolyline(r.polyline), [[RUSSAFA.lng, RUSSAFA.lat], [RUSSAFA.lng, CAMPANAR.lat], [RUSSAFA.lng, CAMPANAR.lat], [CAMPANAR.lng, CAMPANAR.lat]]);
@@ -82,12 +81,22 @@ test('OTP: planConnection con coordenadas y hora de salida; gana el itinerario d
 
 test('OTP: la matriz es un plan por pareja; las que fallan quedan sin ruta, y si fallan todas, error', async () => {
   const seen = [];
-  const free = makeFreeRouting({ otp: 'http://otp', fetchFn: otpServer(seen, (b) => b.variables.to.location.coordinate.latitude === CABANYAL.lat) });
+  const free = makeFreeRouting({ otp: 'http://otp', fetchFn: otpServer(seen, (b) => b.query.includes(`destination: { location: { coordinate: { latitude: ${CABANYAL.lat.toFixed(6)}`)) });
   const m = await free.matrix([RUSSAFA, CAMPANAR], [CABANYAL, CAMPANAR], 'TRANSIT', AT);
   assert.equal(seen.length, 4);
   assert.deepEqual(m.map((row) => row.map((x) => x != null)), [[false, true], [false, true]]);
   const down = makeFreeRouting({ otp: 'http://otp', fetchFn: async () => { throw new Error('ECONNREFUSED'); } });
   await assert.rejects(down.matrix([RUSSAFA], [CAMPANAR], 'TRANSIT', AT), /OTP no responde/);
+});
+
+test('con ROUTING_TOKEN, cada petición lleva la contraseña del servidor', async () => {
+  const headers = [];
+  const free = freeRoutingFromEnv({ OSRM_CAR_URL: 'http://osrm-car', ROUTING_TOKEN: 's3creto' }, async (url, init) => {
+    headers.push(init.headers);
+    return osrmServer()(url, init);
+  });
+  await free.route(RUSSAFA, CAMPANAR, 'DRIVE', AT);
+  assert.equal(headers[0]['X-Routing-Token'], 's3creto');
 });
 
 test('sin variables de entorno no hay rutas propias', () => {
