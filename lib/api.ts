@@ -75,7 +75,7 @@ export function fail(e: unknown) {
       error: closed
         ? 'Ahora mismo no podemos consultar Google Maps. Prueba en un rato.'
         : `Por hoy se ha acabado el cupo gratis de Google Maps. Se renueva a las ${madridTime(err.resetAt!)}.`,
-      code: 'quota', resetAt: err.resetAt, resetText: madridTime(err.resetAt!),
+      code: 'quota', reason: closed ? 'store' : 'cap', resetAt: err.resetAt, resetText: madridTime(err.resetAt!),
     }, closed ? 503 : 429);
   }
   const status = err.status && err.status < 500 && err.status !== 403 && err.status !== 401 ? err.status : 502;

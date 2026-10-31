@@ -7,9 +7,9 @@ import Results from './Results';
 import PersonSheet from './PersonSheet';
 import VenueSheet from './VenueSheet';
 import Loader from './Loader';
-import { COLORS, MODE_TXT, Mark, ShareIcon, CopyIcon, SponsorLink, planTxt } from './brand';
+import { COLORS, MODE_TXT, Mark, ShareIcon, CopyIcon, SponsorLink, SPONSORS_URL, planTxt } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
-import { api, listNames, load, nameOf, save, uid, wait, whenDate } from '@/lib/client';
+import { api, isQuota, listNames, load, nameOf, save, uid, wait, whenDate } from '@/lib/client';
 import { encodeProposal } from '@/lib/share.js';
 import { routeForLink } from '@/lib/polyline.js';
 import { routeFor, routeIfReady } from '@/lib/routes';
@@ -24,7 +24,8 @@ const upgrade = (p: Saved & { mode?: Mode }): Saved => ({
   modes: p.modes?.length ? p.modes : p.mode ? (['WALK', ...(p.mode === 'WALK' ? [] : [p.mode])] as Mode[]) : ([...DEFAULT_MODES] as Mode[]),
 });
 
-export default function Planner() {
+// freeRouting: si los tiempos pueden venir de OpenStreetMap (OSRM/OpenTripPlanner), para citarlo.
+export default function Planner({ freeRouting = false }: { freeRouting?: boolean }) {
   const router = useRouter();
   const root = useRef<HTMLDivElement>(null);
   const [people, setPeople] = useState<Person[]>(() => [newPerson(), newPerson()]);
@@ -39,7 +40,7 @@ export default function Planner() {
   const [editing, setEditing] = useState<number | null>(null);
   const [venueOpen, setVenueOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState<{ text: string; quota: boolean } | null>(null);
   const [toast, setToast] = useState('');
   const [last, setLast] = useState<Saved[] | null>(null);
 
@@ -78,7 +79,7 @@ export default function Planner() {
 
   async function search() {
     if (missing >= 0) return setEditing(missing);
-    setError('');
+    setError(null);
     setLoading(true);
     const started = performance.now();
     try {
@@ -96,7 +97,9 @@ export default function Planner() {
       save('dq:ultimo', people.map(({ name, modes, loc, label }) => ({ name, modes, loc, label })));
       window.scrollTo({ top: 0 });
     } catch (e) {
-      setError((e as Error).message);
+      // Sin cupo gratis no es un fallo: la app es gratis y Google Maps cobra cada búsqueda.
+      if (isQuota(e) && e.reason === 'cap') setError({ text: `Por hoy se han acabado las búsquedas gratis. Vuelven a las ${e.resetText}.`, quota: true });
+      else setError({ text: (e as Error).message, quota: false });
     } finally {
       setLoading(false);
     }
@@ -189,7 +192,12 @@ export default function Planner() {
       <footer className="foot">
         <SponsorLink />
         <p><strong>Fet a la terreta.</strong></p>
-        <p>Tiempos y sitios de Google Maps. Mapa de OpenFreeMap y OpenStreetMap.</p>
+        <p>
+          {freeRouting
+            ? 'Sitios de Google Maps. Tiempos de Google Maps y de OSRM y OpenTripPlanner con datos de OpenStreetMap.'
+            : 'Tiempos y sitios de Google Maps.'}{' '}
+          Mapa de OpenFreeMap y OpenStreetMap.
+        </p>
       </footer>
 
       <div className="bar">
@@ -209,7 +217,12 @@ export default function Planner() {
             </button>
           )}
         </div>
-        {error && !showResults && <p className="bar-error" role="alert">{error}</p>}
+        {error && !showResults && (
+          <p className={error.quota ? 'bar-error quota' : 'bar-error'} role="alert">
+            {error.text}
+            {error.quota && <> Cada búsqueda cuesta dinero en Google Maps: si quieres que haya más, <a href={SPONSORS_URL} target="_blank" rel="noopener noreferrer">apoya el proyecto</a>.</>}
+          </p>
+        )}
       </div>
 
       {editing != null && people[editing] && (

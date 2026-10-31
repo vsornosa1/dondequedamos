@@ -81,7 +81,7 @@ export default function Results({ result, people, plan, when, selected, sort, on
           <span><svg viewBox="0 0 22 10" aria-hidden="true"><line x1="3" y1="5" x2="19" y2="5" stroke="currentColor" strokeWidth="5" strokeLinecap="round" /></svg>Lo que tarda cada uno hasta aquí</span>
           <span><svg viewBox="0 0 14 14" aria-hidden="true"><circle className="dg-ghost" cx="7" cy="7" r="5" /></svg>En el punto medio del mapa</span>
         </div>
-        {estimated && <p className="note">≈ es un tiempo estimado: Google no tenía ruta para ese transporte en esa zona.</p>}
+        {estimated && <p className="note">≈ es un tiempo estimado: no hemos podido calcular la ruta real de ese transporte (por hoy se ha acabado el cálculo gratis o no hay ruta en esa zona).</p>}
       </section>
 
       <section className="alts" aria-labelledby="h-alts">
@@ -109,9 +109,9 @@ export default function Results({ result, people, plan, when, selected, sort, on
       <details className="how">
         <summary>Cómo elegimos el sitio</summary>
         <p>
-          Probamos varias zonas entre vosotros con los horarios de transporte y el tráfico reales de esa hora, buscamos los sitios
-          mejor valorados de la zona que sale más equilibrada y calculamos lo que tarda cada uno hasta cada sitio. «Más justo»
-          pone primero el sitio donde quien más tarda, tarda menos, sin alargar el viaje al resto por nada: un minuto más para
+          Probamos varias zonas entre vosotros con los horarios de transporte de esa hora, buscamos los sitios más populares de
+          la zona que sale más equilibrada y calculamos lo que tarda cada uno hasta cada sitio (en coche, sin contar el tráfico).
+          «Más justo» pone primero el sitio donde quien más tarda, tarda menos, sin alargar el viaje al resto por nada: un minuto más para
           quien más tarda solo compensa si la media del grupo baja más de dos. Por eso, si unos vais andando y otros en coche,
           suele ser el coche el que se acerca.
         </p>

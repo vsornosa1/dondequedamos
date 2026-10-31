@@ -1,12 +1,26 @@
 // Utilidades del navegador: llamadas a la API, guardado local y formato.
 import type { Person, When } from './types';
 
+// code «quota»: se ha acabado el cupo gratis de Google Maps (reason «cap») o no se puede contar («store»).
+export class ApiError extends Error {
+  code?: string;
+  reason?: string;
+  resetText?: string;
+}
+
 export async function api<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error((data as { error?: string }).error || 'Algo ha fallado. Prueba otra vez.');
+  if (!res.ok) {
+    const d = data as { error?: string; code?: string; reason?: string; resetText?: string };
+    const err = new ApiError(d.error || 'Algo ha fallado. Prueba otra vez.');
+    Object.assign(err, { code: d.code, reason: d.reason, resetText: d.resetText });
+    throw err;
+  }
   return data as T;
 }
+
+export const isQuota = (e: unknown): e is ApiError => e instanceof ApiError && e.code === 'quota';
 
 // randomUUID solo existe en https o localhost: al probar desde el móvil por la IP local hace falta el plan B.
 export const uid = () => (typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : String(Math.random()).slice(2));
