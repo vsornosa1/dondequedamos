@@ -246,3 +246,12 @@ test('una clave mala sigue siendo un error de verdad (403), no un «no disponibl
   const g = makeGoogle('k', async () => ({ ok: false, status: 403, text: async () => JSON.stringify({ error: { code: 403, message: 'API key not valid.', status: 'PERMISSION_DENIED', details: [{ reason: 'API_KEY_INVALID' }] } }) }));
   await assert.rejects(g.nearby({ lat: 39.46, lng: -0.37 }, 500, ['bar']), (e) => e.status === 403 && e.code === undefined);
 });
+
+test('una clave restringida a sitios web o a otra API es «no disponible», con el motivo de Google', async () => {
+  for (const reason of ['API_KEY_HTTP_REFERRER_BLOCKED', 'API_KEY_SERVICE_BLOCKED']) {
+    const g = makeGoogle('k', async () => ({ ok: false, status: 403, text: async () => JSON.stringify({ error: {
+      code: 403, status: 'PERMISSION_DENIED', message: `Bloqueado: ${reason}`, details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason }],
+    } }) }));
+    await assert.rejects(g.autocomplete('calle col'), (e) => e.code === 'quota' && e.reason === 'off' && e.status === 503 && e.message === `Bloqueado: ${reason}`);
+  }
+});
