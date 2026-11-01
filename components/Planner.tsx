@@ -10,6 +10,7 @@ import Loader from './Loader';
 import { COLORS, MODE_TXT, Mark, ShareIcon, CopyIcon, SponsorLink, SPONSORS_URL, planTxt } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
 import { api, isQuota, listNames, load, nameOf, save, uid, wait, whenDate } from '@/lib/client';
+import { track } from './Analytics';
 import { encodeProposal } from '@/lib/share.js';
 import { routeForLink } from '@/lib/polyline.js';
 import { routeFor, routeIfReady } from '@/lib/routes';
@@ -96,10 +97,12 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
       setView('results');
       save('dq:ultimo', people.map(({ name, modes, loc, label }) => ({ name, modes, loc, label })));
       window.scrollTo({ top: 0 });
+      track('Búsqueda', { plan, personas: people.length, hora: when.kind === 'now' ? 'ahora' : 'más tarde', estimada: r.options.some((o) => o.times.some((t) => t.est)) });
     } catch (e) {
       // Sin cupo gratis no es un fallo: la app es gratis y Google Maps cobra cada búsqueda.
       if (isQuota(e) && e.reason === 'cap') setError({ text: `Por hoy se han acabado las búsquedas gratis. Vuelven a las ${e.resetText}.`, quota: true });
       else setError({ text: (e as Error).message, quota: false });
+      track('Búsqueda fallida', { motivo: isQuota(e) ? (e.reason === 'cap' ? 'sin cupo' : 'no disponible') : 'error' });
     } finally {
       setLoading(false);
     }
@@ -148,9 +151,10 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
     if (!selected) return;
     const { url, text } = shareData(selected);
     if (navigator.share) {
-      try { await navigator.share({ text, url }); return; }
+      try { await navigator.share({ text, url }); track('Mandar al grupo', { via: 'menú del móvil' }); return; }
       catch (e) { if ((e as Error).name === 'AbortError') return; }
     }
+    track('Mandar al grupo', { via: 'WhatsApp' });
     window.open(`https://wa.me/?text=${encodeURIComponent(`${text} ${url}`)}`, '_blank', 'noopener');
   }
 
@@ -160,6 +164,7 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
     try {
       await navigator.clipboard.writeText(`${text} ${url}`);
       setToast('Copiado. Pégalo en el grupo.');
+      track('Mandar al grupo', { via: 'copiar' });
     } catch {
       setToast('No se ha podido copiar. Usa «Mandar al grupo».');
     }
