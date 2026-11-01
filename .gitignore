@@ -18,3 +18,7 @@ video/public/music.wav
 video/public/music-*.wav
 video/public/map-*.png
 video/public/maplibre-gl-worker.mjs
+
+# Servidor de rutas gratis: los datos se generan en la máquina con infra/free-routing/prepare.sh
+infra/free-routing/data/
+infra/free-routing/otp/

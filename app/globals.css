@@ -289,3 +289,7 @@ h1, h2 { text-wrap: balance; }
   .ld-msg, .toast { animation: none; }
   .sign-photo img { transition: none; }
 }
+
+/* Sin cupo gratis no es un error: se dice con calma y se explica cómo ayudar. */
+.bar-error.quota { padding: 10px 14px; border-radius: var(--r-s); background: var(--panel); box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); font-weight: 600; }
+.bar-error a { color: inherit; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; }

@@ -1,0 +1,24 @@
+# Una sola entrada con HTTPS. Sin la cabecera X-Routing-Token correcta, 403: el servidor es gratis para ti,
+# no para cualquiera que lo encuentre.
+{$DOMAIN} {
+	@sin_token not header X-Routing-Token {$ROUTING_TOKEN}
+
+	# route respeta el orden: primero la contraseña, luego cada servicio.
+	route {
+		respond @sin_token 403
+		handle_path /osrm/foot/* {
+			reverse_proxy osrm-foot:5000
+		}
+		handle_path /osrm/bike/* {
+			reverse_proxy osrm-bike:5000
+		}
+		handle_path /osrm/car/* {
+			reverse_proxy osrm-car:5000
+		}
+		# OTP sin recortar la ruta: la app llama a /otp/gtfs/v1.
+		handle /otp/* {
+			reverse_proxy otp:8080
+		}
+		respond 404
+	}
+}

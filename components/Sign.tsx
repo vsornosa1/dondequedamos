@@ -12,6 +12,7 @@ type Props = { option: Option; plan: Plan; photo: Option['photo']; label?: strin
 export default function Sign({ option, plan, photo, label = 'Punto de encuentro', onMore }: Props) {
   const root = useRef<HTMLElement>(null);
   const [loaded, setLoaded] = useState<string | null>(null);
+  const [broken, setBroken] = useState<string | null>(null);
 
   useGSAP(() => {
     if (reduceMotion()) return;
@@ -33,11 +34,11 @@ export default function Sign({ option, plan, photo, label = 'Punto de encuentro'
 
   return (
     <article className="sign" ref={root}>
-      {photo && (
+      {photo && broken !== photo.name && (
         <button type="button" className="sign-photo" onClick={onMore} aria-label={`Ver fotos de ${option.name}`}>
           <img
             key={photo.name} src={photoSrc(photo.name, 900)} alt="" decoding="async"
-            className={loaded === photo.name ? 'in' : ''} onLoad={() => setLoaded(photo.name)}
+            className={loaded === photo.name ? 'in' : ''} onLoad={() => setLoaded(photo.name)} onError={() => setBroken(photo.name)}
           />
           {photo.by && <span className="credit">Foto: {photo.by}</span>}
         </button>

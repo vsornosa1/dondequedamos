@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   const name = req.nextUrl.searchParams.get('n') || '';
   const width = Math.min(1600, Math.max(100, Number(req.nextUrl.searchParams.get('w')) || 800));
   if (!/^places\/[\w-]+\/photos\/[\w-]+$/.test(name)) return json({ error: 'Foto no válida.' }, 400);
-  if (limited(req, 'ph', 240, 600_000)) return tooMany('Demasiadas fotos, espera un poco.');
+  if (await limited(req, 'ph', 240, 600_000)) return tooMany('Demasiadas fotos, espera un poco.');
   const google = getGoogle();
   if (!google) return noKey();
   try {

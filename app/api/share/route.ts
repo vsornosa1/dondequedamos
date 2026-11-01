@@ -6,7 +6,7 @@ import { createShort, shortLinksEnabled } from '@/lib/shortlinks';
 // Convierte el enlace largo en uno corto. Solo guarda lo que ya enseña la página de la propuesta.
 export async function POST(req: NextRequest) {
   if (!shortLinksEnabled()) return json({ error: 'Enlaces cortos no configurados.' }, 503);
-  if (limited(req, 'sh', 40, 600_000)) return tooMany('Demasiados enlaces, espera un poco.');
+  if (await limited(req, 'sh', 40, 600_000)) return tooMany('Demasiados enlaces, espera un poco.');
   const { d } = await req.json().catch(() => ({}));
   if (typeof d !== 'string' || d.length > 12000 || !decodeProposal(d)) return json({ error: 'Propuesta no válida.' }, 400); // con las rutas
   try {

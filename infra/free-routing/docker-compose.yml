@@ -1,0 +1,49 @@
+# Servidor de rutas gratis para dondequedamos: OSRM (andando, bici y coche) y OpenTripPlanner (transporte
+# público), detrás de Caddy con HTTPS y una contraseña (X-Routing-Token) para que solo lo use la app.
+# Pensado para una máquina gratuita (Oracle Cloud Always Free, ARM de 4 núcleos y 24 GB). Guía: GRATIS.md
+#
+#   1. ./prepare.sh                 (descarga y prepara los datos; una vez, y cuando quieras actualizarlos)
+#   2. cp env.example .env          (y rellena DOMAIN y ROUTING_TOKEN)
+#   3. docker compose up -d
+
+x-osrm: &osrm
+  image: ghcr.io/project-osrm/osrm-backend:v26.10.0-debian
+  restart: unless-stopped
+  volumes:
+    - ./data:/data:ro
+
+services:
+  osrm-foot:
+    <<: *osrm
+    command: osrm-routed --algorithm mld --max-table-size 200 /data/foot/region.osrm
+  osrm-bike:
+    <<: *osrm
+    command: osrm-routed --algorithm mld --max-table-size 200 /data/bike/region.osrm
+  osrm-car:
+    <<: *osrm
+    command: osrm-routed --algorithm mld --max-table-size 200 /data/car/region.osrm
+
+  otp:
+    image: docker.io/opentripplanner/opentripplanner:2.10.0
+    restart: unless-stopped
+    command: --load --serve
+    environment:
+      - JAVA_TOOL_OPTIONS=-Xmx8g
+    volumes:
+      - ./otp:/var/opentripplanner
+
+  # La única puerta de entrada: HTTPS automático (Let's Encrypt) y, sin la contraseña, 403.
+  caddy:
+    image: docker.io/library/caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file: .env
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [osrm-foot, osrm-bike, osrm-car, otp]
+
+volumes:
+  caddy-data:

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import Sheet from './Sheet';
 import { MODE_LABEL, ModeIcon, LocateIcon, SearchIcon, PinIcon, ClockIcon } from './brand';
-import { api, initialOf, load, save, uid } from '@/lib/client';
+import { api, initialOf, isQuota, load, save, uid } from '@/lib/client';
 import type { LatLng, Mode, Person } from '@/lib/types';
 
 // De lo más sencillo a lo menos: así se leen los que puede usar cada uno.
@@ -44,6 +44,8 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [noSearch, setNoSearch] = useState(false); // se ha acabado el buscador gratis por hoy
+  const [answered, setAnswered] = useState(''); // la última búsqueda que ya ha contestado
   const session = useMemo(() => uid(), []);
   const [recents, setRecents] = useState<Recent[]>([]);
   const isYou = index === 0;
@@ -58,9 +60,9 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
       setBusy(true);
       try {
         const d = await api<{ items: Item[] }>('/api/autocomplete', { input: query, session, bias });
-        if (live) setItems(d.items);
-      } catch {
-        if (live) setItems([]);
+        if (live) { setItems(d.items); setNoSearch(false); setAnswered(query); }
+      } catch (e) {
+        if (live) { setItems([]); setNoSearch(isQuota(e)); setAnswered(query); }
       } finally {
         if (live) setBusy(false);
       }
@@ -143,7 +145,7 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
       {error && <p className="ps-error" role="alert">{error}</p>}
 
       <ul className="ps-results" id="ps-list" role="listbox" aria-label="Sitios">
-        {!typing && (
+        {(!typing || noSearch) && (
           <li role="option" aria-selected="false">
             <button type="button" onClick={locate}>
               <span className="ps-ico accent"><LocateIcon /></span>
@@ -167,7 +169,13 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
             </button>
           </li>
         ))}
-        {typing && !busy && !items.length && <li className="ps-empty">Sin resultados. Prueba con el barrio o una estación de metro.</li>}
+        {typing && !busy && !items.length && answered === q.trim() && (
+          <li className="ps-empty">
+            {noSearch
+              ? 'Por hoy se ha acabado el buscador de direcciones gratis. Usa tu ubicación o una dirección reciente.'
+              : 'Sin resultados. Prueba con el barrio o una estación de metro.'}
+          </li>
+        )}
       </ul>
 
       {canRemove && (

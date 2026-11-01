@@ -10,7 +10,7 @@ const point = (p: unknown) => {
 
 // La ruta de una persona hasta el sitio elegido, para dibujarla en el mapa.
 export async function POST(req: NextRequest) {
-  if (limited(req, 'ro', 80, 600_000)) return tooMany('Demasiadas rutas, espera un poco.');
+  if (await limited(req, 'ro', 80, 600_000)) return tooMany('Demasiadas rutas, espera un poco.');
   const google = getGoogle();
   if (!google) return noKey();
   const { origin, dest, mode, when } = await req.json().catch(() => ({}));

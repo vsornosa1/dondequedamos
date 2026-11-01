@@ -12,13 +12,15 @@ const euros = (m?: Money) => (m?.units ? `${m.units} ${m.currencyCode === 'EUR' 
 
 // Ficha de un sitio con fotos. Se cachea en la CDN: los datos de un bar cambian poco.
 export async function GET(req: NextRequest) {
-  if (limited(req, 've', 60, 600_000)) return tooMany('Demasiadas consultas, espera un poco.');
+  if (await limited(req, 've', 60, 600_000)) return tooMany('Demasiadas consultas, espera un poco.');
   const google = getGoogle();
   if (!google) return noKey();
   const id = req.nextUrl.searchParams.get('id') || '';
   if (!/^[\w-]{2,300}$/.test(id)) return json({ error: 'Sitio no válido.' }, 400);
   try {
     const v = await google.details(id);
+    // Las fotos se piden después, una a una: si hoy ya no quedan gratis, la ficha va sin ellas.
+    const photos = 'canSpend' in google && google.canSpend ? await google.canSpend('photos') : true;
     const from = euros(v.priceRange?.startPrice), to = euros(v.priceRange?.endPrice);
     return json({
       id,
@@ -35,7 +37,7 @@ export async function GET(req: NextRequest) {
       web: v.websiteUri || '',
       maps: v.googleMapsUri || '',
       features: FEATURES.filter(([k]) => v[k] === true).map(([, label]) => label),
-      photos: (v.photos || []).slice(0, 4).map((p: { name: string; authorAttributions?: { displayName?: string }[] }) => ({
+      photos: (photos ? v.photos || [] : []).slice(0, 4).map((p: { name: string; authorAttributions?: { displayName?: string }[] }) => ({
         name: p.name, by: p.authorAttributions?.[0]?.displayName || '',
       })),
     }, 200, { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' });
