@@ -246,3 +246,23 @@ test('una clave mala sigue siendo un error de verdad (403), no un «no disponibl
   const g = makeGoogle('k', async () => ({ ok: false, status: 403, text: async () => JSON.stringify({ error: { code: 403, message: 'API key not valid.', status: 'PERMISSION_DENIED', details: [{ reason: 'API_KEY_INVALID' }] } }) }));
   await assert.rejects(g.nearby({ lat: 39.46, lng: -0.37 }, 500, ['bar']), (e) => e.status === 403 && e.code === undefined);
 });
+
+test('una clave restringida a sitios web o a otra API es «no disponible», con el motivo de Google', async () => {
+  for (const reason of ['API_KEY_HTTP_REFERRER_BLOCKED', 'API_KEY_SERVICE_BLOCKED']) {
+    const g = makeGoogle('k', async () => ({ ok: false, status: 403, text: async () => JSON.stringify({ error: {
+      code: 403, status: 'PERMISSION_DENIED', message: `Bloqueado: ${reason}`, details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason }],
+    } }) }));
+    await assert.rejects(g.autocomplete('calle col'), (e) => e.code === 'quota' && e.reason === 'off' && e.status === 503 && e.message === `Bloqueado: ${reason}`);
+  }
+});
+
+test('si Google corta por cuota diaria (429), es «se ha acabado por hoy», y la matriz pasa a estimaciones', async () => {
+  const exhausted = { ok: false, status: 429, text: async () => JSON.stringify({ error: {
+    code: 429, status: 'RESOURCE_EXHAUSTED', message: "Quota exceeded for quota metric 'SearchNearbyRequest per day'",
+  } }) };
+  const nearbyOff = makeGoogle('k', async (url, init) => (String(url).includes('searchNearby') ? exhausted : mockFetch(url, init)));
+  await assert.rejects(findMeetingPlace(nearbyOff, { friends, plan: 'cenar' }), (e) => e.code === 'quota' && e.reason === 'cap' && e.status === 429 && e.resetAt > Date.now());
+  const matrixOff = makeGoogle('k', async (url, init) => (String(url).includes('computeRouteMatrix') ? exhausted : mockFetch(url, init)));
+  const r = await findMeetingPlace(matrixOff, { friends, plan: 'cenar' });
+  assert.ok(r.options.length >= 5 && r.options.every((o) => o.times.every((t) => t.est)));
+});

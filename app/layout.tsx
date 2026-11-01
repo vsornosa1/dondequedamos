@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
 import { Overpass } from 'next/font/google';
+import Analytics from '@/components/Analytics';
 import './globals.css';
 
 const overpass = Overpass({ subsets: ['latin'], weight: ['400', '600', '700', '800', '900'], variable: '--font-overpass', display: 'swap' });
@@ -37,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className={overpass.variable}>
       <body>
         {children}
-        {process.env.NODE_ENV === 'production' && <Script src="/_vercel/insights/script.js" strategy="afterInteractive" />}
+        <Analytics />
       </body>
     </html>
   );

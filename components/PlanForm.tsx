@@ -48,7 +48,7 @@ export default function PlanForm({ people, plan, when, recall, onOpenPerson, onA
         <WhenPicker when={when} onWhen={onWhen} />
       </section>
 
-      <p className="privacy">No guardamos ninguna dirección. Se usan para calcular y se olvidan.</p>
+      <p className="privacy">No guardamos ninguna dirección. Se usan para calcular y se olvidan. Contamos visitas sin cookies y sin datos personales.</p>
     </div>
   );
 }

@@ -69,10 +69,30 @@ GOOGLE_CREDIT_UNTIL=2027-01-27  # su fecha de fin
 3. **Si reactivas a mitad de mes**, el contador empieza en cero, pero Google ya habrá contado lo de ese mes. Baja el margen hasta el mes siguiente: `FREE_TIER_SAFETY=0.5`, o un tope concreto con `GOOGLE_FREE_CAPS='{"matrixEssentials":2000}'`.
 4. **Segunda red en Google Cloud** (por si algo se escapa: otra app con la misma clave, un error…):
    - **Restringe la clave** a «Places API (New)» y «Routes API» en APIs y servicios → Credenciales.
+     - **Restricción de aplicación: ninguna.** Las llamadas salen de los servidores de Vercel, sin Referer, y una restricción por sitios web las bloquea todas: la app se queda sin sugerencias de direcciones, sin búsquedas y sin rutas.
+     - No hace falta esa restricción: la clave nunca llega al navegador (las fotos se sirven con una redirección sin ella).
    - **Alerta de presupuesto** de 1 € en Facturación → Presupuestos y alertas, sobre el coste con los créditos descontados: avisa si algo se llega a cobrar de verdad. Avisa, pero no corta.
-   - **Cuotas** de Routes API y Places API (New) lo más bajas que permita la consola, en APIs y servicios → Cuotas.
+   - **Cuotas diarias** en Google Maps Platform → Cuotas (sección siguiente).
    - **Corte automático** (montado en `artful-cipher-513021-g1`): ver la sección siguiente.
 5. **Despausa el proyecto** en Vercel.
+
+## Cuotas diarias en Google (el tope instantáneo)
+
+Google las aplica al momento a cualquier llamada con la clave, también si alguien la robara. El presupuesto, en cambio, se entera horas después. Al llegar a una cuota, Google contesta 429 y la app lo trata igual que el cupo agotado: tiempos estimados o «por hoy se han acabado…». Las cuotas diarias se renuevan a medianoche del Pacífico, como el guardián.
+
+Se cambian en Google Maps Platform → Cuotas, eligiendo la API arriba, y en cada fila ⋮ → Editar cuota. Valores pensados para dejar margen al guardián y al crédito sin dejar la puerta abierta:
+
+| API | Cuota «per day» | Valor |
+|---|---|---|
+| Routes API | `DistanceMatrix - ComputeRouteMatrix per-element quota per day` | 800 |
+| Routes API | `Directions - ComputeRoutes per request quota per day` | 400 |
+| Places API (New) | `SearchNearbyRequest per day` | 250 |
+| Places API (New) | `AutocompletePlacesRequest per day` | 1.000 |
+| Places API (New) | `GetPlaceRequest per day` (elegir dirección y ficha del sitio) | 400 |
+| Places API (New) | `GetPhotoMediaRequest per day` | 150 |
+| Places API (New) | `SearchText`, `Lookup…`, `SearchMedia`, `…ReviewPosts…` per day (la app no los usa) | 0 |
+
+Las cuotas por minuto pueden quedarse como están. Si un día la app se queda corta con tráfico de verdad, sube la que toque mirando la columna «Current usage».
 
 ## El corte automático por presupuesto
 
