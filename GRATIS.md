@@ -1,6 +1,6 @@
 # dondequedamos a 0 €
 
-La app solo usa la parte gratuita de Google Maps Platform. Cada llamada a Google se cuenta **antes** de hacerse, y la que no cabe en el tramo gratis del mes no se hace. En su lugar la app sigue con lo que tenga: tiempos estimados, sin foto, sin ruta dibujada… Si todo lo de Google se agota, avisa de que por hoy no quedan búsquedas.
+La app solo usa la parte gratuita de Google Maps Platform y, si lo configuras, el crédito de tu cuenta de Google (más abajo). Cada llamada a Google se cuenta **antes** de hacerse, y la que no cabe no se hace. En su lugar la app sigue con lo que tenga: tiempos estimados, sin foto, sin ruta dibujada… Si todo lo de Google se agota, avisa de que por hoy no quedan búsquedas.
 
 Lo hace `lib/quota.js`. Este documento explica qué garantiza, qué revisar antes de reactivar la app en Vercel y cómo montar un servidor de rutas gratuito para que quepa mucha más gente.
 
@@ -43,17 +43,73 @@ Una búsqueda de 3 personas gasta 1 o 2 Nearby y unos 45 elementos de matriz.
 
 Con `PLACES_NEARBY_TIER=enterprise` vuelven la valoración, el precio y «abierto ahora» en la lista, pero el techo baja a unas 25 búsquedas al día. En nivel Pro, la ficha de cada sitio sigue mostrando la valoración y el horario.
 
+## Usar el crédito de Google (opcional)
+
+Tu cuenta tiene crédito de la prueba gratuita: lo ves en Facturación → Créditos. Con estas dos variables, cuando se acaba lo gratis del día, el guardián paga con el crédito en vez de pasar a tiempos estimados o quitar fotos:
+
+```bash
+GOOGLE_CREDIT_EUR=244,94        # lo que queda, tal cual sale en Facturación → Créditos
+GOOGLE_CREDIT_UNTIL=2027-01-27  # su fecha de fin
+```
+
+- **Gasta como mucho el 80 %** (`GOOGLE_CREDIT_SAFETY`), repartido por días hasta 2 días antes de que caduque. Con 244,94 € hasta el 27 de enero sale a unos 2,30 € al día. Lo que no se gasta un día pasa al siguiente.
+- **Cuenta de más, nunca de menos.** Usa los precios de lista en dólares como si fueran euros, un 10-15 % por encima de lo que cobra Google en euros. Lo que paga el crédito no se descuenta del tramo gratis, y el tramo gratis se queda en el 80 % del de Google. Así, lo que Google cobra de verdad siempre es menos de lo que apunta el guardián.
+- **Desde 2 días antes de que caduque** (el 26 de enero), vuelve solo al tramo gratis, sin tocar nada.
+- **2,30 € al día dan para** unas 10 búsquedas más con tiempos reales, unas 70 búsquedas de sitios más o unas 300 fotos más, según lo que se acabe antes ese día.
+- Para gastarlo más deprisa, por ejemplo todo en noviembre para aprovechar el relanzamiento, pon una fecha anterior en `GOOGLE_CREDIT_UNTIL`.
+- Si cambias el importe o la fecha, la cuenta del crédito empieza de cero. Para ponerla al día, copia a la vez el importe que diga la facturación.
+
+**Tu cuenta ya es de pago.** El crédito se convirtió al activarla (en Créditos aparece como «FreeTrialUpgrade»). Cuando se acabe o caduque, Google cobrará en la tarjeta lo que pase del tramo gratis. El guardián evita que pase; la alerta de presupuesto te avisa si pasa.
+
 ## Antes de despausar en Vercel
 
 1. **Upstash Redis en producción.** Comprueba que `KV_REST_API_URL` y `KV_REST_API_TOKEN` están en las variables de Vercel (son las de los enlaces cortos). Sin ellas, la app no llamará a Google.
-2. **Lleva esta rama a `main`.** El `vercel.json` solo impide desplegar las ramas `claude/*`: `main` sigue desplegando como siempre.
+2. **Lleva los cambios a `main`.** El `vercel.json` solo impide desplegar las ramas `claude/*`: `main` sigue desplegando como siempre.
+   - Si vas a usar el crédito, añade también `GOOGLE_CREDIT_EUR` y `GOOGLE_CREDIT_UNTIL` (sección anterior).
 3. **Si reactivas a mitad de mes**, el contador empieza en cero, pero Google ya habrá contado lo de ese mes. Baja el margen hasta el mes siguiente: `FREE_TIER_SAFETY=0.5`, o un tope concreto con `GOOGLE_FREE_CAPS='{"matrixEssentials":2000}'`.
 4. **Segunda red en Google Cloud** (por si algo se escapa: otra app con la misma clave, un error…):
    - **Restringe la clave** a «Places API (New)» y «Routes API» en APIs y servicios → Credenciales.
-   - **Alerta de presupuesto** de 1 € en Facturación → Presupuestos y alertas. Avisa, pero no corta.
+   - **Alerta de presupuesto** de 1 € en Facturación → Presupuestos y alertas, sobre el coste con los créditos descontados: avisa si algo se llega a cobrar de verdad. Avisa, pero no corta.
    - **Cuotas** de Routes API y Places API (New) lo más bajas que permita la consola, en APIs y servicios → Cuotas.
-   - Si quieres un corte duro, Google documenta cómo desactivar la facturación desde una alerta de presupuesto (presupuesto → Pub/Sub → Cloud Function). Corta todo el proyecto de Google Cloud, no solo los mapas.
+   - **Corte automático** (montado en `artful-cipher-513021-g1`): ver la sección siguiente.
 5. **Despausa el proyecto** en Vercel.
+
+## El corte automático por presupuesto
+
+Es la tercera red: el guardián evita gastar, la alerta avisa y el corte apaga. Montado en el proyecto `artful-cipher-513021-g1`:
+
+- El presupuesto `Maps-stop-1EUR` (1 € al mes, con créditos y descuentos descontados) publica en el topic `maps-budget-stop`.
+- La función `stop-maps-on-budget` (Cloud Run, `europe-west1`; código en `~/maps-budget-stop` de Cloud Shell) desactiva `places.googleapis.com` y `routes.googleapis.com` cuando el coste del mes llega a 1 €. No toca la facturación ni otros servicios.
+- Como el presupuesto descuenta los créditos, **mientras dure el crédito no salta**: el coste neto es 0 €. Solo salta si se llega a cobrar dinero de verdad.
+
+**Comprobar que el presupuesto real está conectado** (en Cloud Shell):
+
+```bash
+BA=$(gcloud billing projects describe artful-cipher-513021-g1 --format='value(billingAccountName)'); BA=${BA#billingAccounts/}
+gcloud billing budgets list --billing-account="$BA" --format=json
+```
+
+En el presupuesto `Maps-stop-1EUR` tiene que salir:
+
+- `amount` en EUR de 1.
+- `budgetFilter.projects` con este proyecto.
+- `creditTypesTreatment: INCLUDE_ALL_CREDITS`.
+- `notificationsRule.pubsubTopic: projects/artful-cipher-513021-g1/topics/maps-budget-stop`.
+
+Google manda el estado del presupuesto a ese topic varias veces al día aunque no haya gasto. La prueba definitiva es ver en los registros de la función (Cloud Run → `stop-maps-on-budget` → Registros) un mensaje real con `budgetDisplayName: Maps-stop-1EUR` y `costAmount: 0`. Si la función no escribe el mensaje que recibe, añade esa línea.
+
+**Si salta:**
+
+- La app sigue en pie y dice «Ahora mismo no podemos consultar Google Maps». En los registros de Vercel aparece «Google Maps apagado o bloqueado para esta clave».
+- Si solo se apaga Routes, las búsquedas siguen con tiempos estimados.
+- Antes de reactivar, mira en Facturación qué se ha cobrado y por qué.
+- **Ojo:** si reactivas las APIs el mismo mes, la siguiente notificación (el coste del mes sigue en 1 € o más) las vuelve a apagar en unas horas. Para reactivar antes de fin de mes, sube antes el importe del presupuesto o desconecta el topic. Después:
+
+  ```bash
+  gcloud services enable places.googleapis.com routes.googleapis.com --project=artful-cipher-513021-g1
+  ```
+
+- Las notificaciones de facturación llevan horas de retraso: el corte no garantiza un máximo exacto de 1 €. Por eso el guardián es la primera red.
 
 ## Probar en local sin gastar
 
@@ -68,6 +124,12 @@ Para ver cómo se comporta la app cuando se acaba algo, pon ese tope a cero:
 GOOGLE_FREE_CAPS='{"nearbyPro":0}' npm run dev:mock          # sin búsquedas
 GOOGLE_FREE_CAPS='{"matrixEssentials":0,"photos":0}' npm run dev:mock   # tiempos estimados, sin fotos
 GOOGLE_FREE_CAPS='{"autocomplete":0}' npm run dev:mock       # sin buscador de direcciones
+```
+
+Y para ver qué pasa cuando el corte automático apaga las APIs:
+
+```bash
+MOCK_GOOGLE_OFF=places,routes npm run dev:mock    # o solo una de las dos
 ```
 
 En modo simulado se cuenta en memoria, nunca en el Redis de producción.
@@ -127,8 +189,11 @@ La lógica del cliente (`lib/freeRouting.js`) tiene pruebas con respuestas en el
 | `FREE_TIER_SAFETY` | Qué parte del tramo gratis se usa (0–1) | `0.8` |
 | `GOOGLE_FREE_CAPS` | Topes mensuales por SKU, en JSON. Por ejemplo `{"nearbyPro":2000}` | Los de Google |
 | `FREE_TIER_GUARD` | `off` quita el guardián. **Entonces Google cobra lo que pase del tramo gratis.** | activado |
+| `GOOGLE_CREDIT_EUR` | El crédito que queda (Facturación → Créditos), para gastarlo cuando se acaba lo gratis | — (sin crédito) |
+| `GOOGLE_CREDIT_UNTIL` | La fecha de fin del crédito (AAAA-MM-DD); se deja de usar 2 días antes | — |
+| `GOOGLE_CREDIT_SAFETY` | Qué parte del crédito se usa (0–1) | `0.8` |
 | `OSRM_WALK_URL`, `OSRM_BIKE_URL`, `OSRM_CAR_URL` | Servidores OSRM propios | — (Google) |
 | `OTP_URL` | Endpoint GraphQL de OpenTripPlanner (`…/otp/gtfs/v1`) | — (Google) |
 | `ROUTING_TOKEN` | La contraseña del servidor de rutas (cabecera `X-Routing-Token`) | — |
 
-Si un día llegan donaciones o patrocinios, `GOOGLE_FREE_CAPS` y `FREE_TIER_SAFETY` son las palancas para subir el cupo sabiendo cuánto cuesta.
+Si un día llegan donaciones o patrocinios, `GOOGLE_FREE_CAPS` y `FREE_TIER_SAFETY` son las palancas para subir el cupo sabiendo cuánto cuesta. Los precios por SKU están en `PRICE_MILLI_EUR` (`lib/quota.js`).

@@ -44,7 +44,8 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [noSearch, setNoSearch] = useState(false); // se ha acabado el buscador gratis por hoy
+  // El buscador no responde: 'cap', se ha acabado el gratis de hoy; 'off', Google Maps no está disponible.
+  const [noSearch, setNoSearch] = useState<false | 'cap' | 'off'>(false);
   const [answered, setAnswered] = useState(''); // la última búsqueda que ya ha contestado
   const session = useMemo(() => uid(), []);
   const [recents, setRecents] = useState<Recent[]>([]);
@@ -62,7 +63,7 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
         const d = await api<{ items: Item[] }>('/api/autocomplete', { input: query, session, bias });
         if (live) { setItems(d.items); setNoSearch(false); setAnswered(query); }
       } catch (e) {
-        if (live) { setItems([]); setNoSearch(isQuota(e)); setAnswered(query); }
+        if (live) { setItems([]); setNoSearch(isQuota(e) ? (e.reason === 'cap' ? 'cap' : 'off') : false); setAnswered(query); }
       } finally {
         if (live) setBusy(false);
       }
@@ -171,9 +172,11 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
         ))}
         {typing && !busy && !items.length && answered === q.trim() && (
           <li className="ps-empty">
-            {noSearch
+            {noSearch === 'cap'
               ? 'Por hoy se ha acabado el buscador de direcciones gratis. Usa tu ubicación o una dirección reciente.'
-              : 'Sin resultados. Prueba con el barrio o una estación de metro.'}
+              : noSearch === 'off'
+                ? 'Ahora mismo no funciona el buscador de direcciones. Usa tu ubicación o una dirección reciente.'
+                : 'Sin resultados. Prueba con el barrio o una estación de metro.'}
           </li>
         )}
       </ul>

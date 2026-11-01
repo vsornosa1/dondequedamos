@@ -1,7 +1,7 @@
 // El guardián del tramo gratuito: Google nunca debe recibir una llamada que no quepa en lo gratis.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeQuota, memoryStore, guardGoogle, closedGoogle, nextReset, pacificDay, capsFromEnv, QuotaError, FREE_CAPS } from '../lib/quota.js';
+import { makeQuota, memoryStore, guardGoogle, closedGoogle, nextReset, pacificDay, capsFromEnv, creditFromEnv, QuotaError, FREE_CAPS } from '../lib/quota.js';
 import { findMeetingPlace } from '../lib/search.js';
 import { makeGoogle } from '../lib/google.js';
 import { mockFetch } from '../lib/mockGoogle.js';
@@ -158,4 +158,91 @@ test('sin dónde contar (producción sin Redis), no se llama a Google para nada'
   await assert.rejects(g.matrix([RUSSAFA], [CAMPANAR], 'WALK', ''), (e) => e.reason === 'store');
   await assert.rejects(g.autocomplete('Russafa'), (e) => e.reason === 'store');
   assert.equal(calls.matrix + calls.nearby + calls.other, 0);
+});
+
+/* ---------- El crédito de Google ---------- */
+
+// Un crédito de 30 € (en milésimas) cuyo último día de uso es el 10 de noviembre: 10 días desde el 1.
+const credit = (eur = 30) => ({ budget: eur * 1000, lastDay: Date.UTC(2026, 10, 10) / 86400e3, id: `t${eur}` });
+
+test('el crédito se lee de la facturación tal cual: importe con coma, fecha de fin y 2 días de margen', () => {
+  const c = creditFromEnv({ GOOGLE_CREDIT_EUR: '244,94', GOOGLE_CREDIT_UNTIL: '2027-01-27' });
+  assert.equal(c.budget, Math.floor(244.94 * 0.8 * 1000)); // se gasta como mucho el 80 %
+  assert.equal(new Date(c.lastDay * 86400e3).toISOString().slice(0, 10), '2027-01-25');
+  assert.equal(creditFromEnv({ GOOGLE_CREDIT_EUR: '100', GOOGLE_CREDIT_UNTIL: '2027-01-27', GOOGLE_CREDIT_SAFETY: '0.5' }).budget, 50000);
+  assert.equal(creditFromEnv({}), null);
+  assert.equal(creditFromEnv({ GOOGLE_CREDIT_EUR: '244', GOOGLE_CREDIT_UNTIL: '27/01/2027' }), null);
+  assert.equal(creditFromEnv({ GOOGLE_CREDIT_EUR: 'mucho', GOOGLE_CREDIT_UNTIL: '2027-01-27' }), null);
+});
+
+test('cuando se acaba lo gratis de hoy, paga el crédito, repartido por días', async () => {
+  const q = makeQuota({ store: memoryStore(), caps: { matrixEssentials: 30 }, safety: 1, credit: credit(1), now: () => NOV1, log: quiet });
+  await q.take('matrixEssentials'); // 1 gratis al día (30 / 30 días)
+  // 1 € entre 10 días = 100 milésimas hoy; cada elemento cuesta 5: caben 20 elementos con crédito.
+  await q.take('matrixEssentials', 10);
+  await q.take('matrixEssentials', 10);
+  await assert.rejects(q.take('matrixEssentials'), isQuota);
+  const u = await q.usage();
+  assert.equal(u.matrixEssentials.today, 1); // lo pagado con crédito no gasta tramo gratis
+  assert.equal(u.credit.spent, 0.1);
+});
+
+test('el crédito nunca pasa de su presupuesto, ni con muchas llamadas a la vez', async () => {
+  let now = Date.parse('2026-11-10T20:00:00Z'); // último día: todo lo que queda del crédito
+  const q = makeQuota({ store: memoryStore(), caps: { nearbyPro: 0 }, safety: 1, credit: credit(1), now: () => now, log: quiet });
+  const r = await Promise.allSettled(Array.from({ length: 50 }, () => q.take('nearbyPro'))); // 32 milésimas cada una
+  assert.equal(r.filter((x) => x.status === 'fulfilled').length, 31); // 31 × 32 = 992 ≤ 1.000
+  assert.ok((await q.usage()).credit.spent <= 1);
+  now = Date.parse('2026-11-11T20:00:00Z'); // pasado su último día, nada de crédito
+  const q2 = makeQuota({ store: memoryStore(), caps: { nearbyPro: 0 }, safety: 1, credit: credit(1), now: () => now, log: quiet });
+  await assert.rejects(q2.take('nearbyPro'), isQuota);
+});
+
+test('un SKU sin precio conocido nunca usa crédito', async () => {
+  const q = makeQuota({ store: memoryStore(), caps: { autocompleteSessions: 0 }, safety: 1, credit: credit(), now: () => NOV1, log: quiet });
+  await assert.rejects(q.take('autocompleteSessions'), isQuota);
+  assert.equal(await q.canSpend('autocompleteSessions'), false);
+});
+
+test('mirar si cabe también cuenta el crédito', async () => {
+  const q = makeQuota({ store: memoryStore(), caps: { photos: 0 }, safety: 1, credit: credit(), now: () => NOV1, log: quiet });
+  assert.equal(await q.canSpend('photos'), true);
+  const sinCredito = makeQuota({ store: memoryStore(), caps: { photos: 0 }, safety: 1, now: () => NOV1, log: quiet });
+  assert.equal(await sinCredito.canSpend('photos'), false);
+});
+
+test('con crédito, la búsqueda tiene tiempos reales aunque se haya acabado la matriz gratis', async () => {
+  const { google, calls } = counted();
+  const q = makeQuota({ store: memoryStore(), caps: { ...FREE_CAPS, matrixEssentials: 0 }, safety: 1, credit: credit(), now: () => NOV1, log: quiet });
+  const r = await findMeetingPlace(guardGoogle(google, q), { friends, plan: 'cenar' });
+  assert.ok(r.options.every((o) => o.times.every((t) => !t.est)));
+  assert.equal((await q.usage()).credit.spent, (calls.elements * 5) / 1000); // 5 milésimas por elemento
+});
+
+/* ---------- El corte automático por presupuesto ---------- */
+
+// Lo que contesta Google cuando la API está desactivada (el corte por presupuesto la apaga).
+const disabled = (service) => ({
+  ok: false, status: 403,
+  text: async () => JSON.stringify({ error: {
+    code: 403, status: 'PERMISSION_DENIED',
+    message: `${service} has not been used in project 123 before or it is disabled.`,
+    details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'SERVICE_DISABLED', domain: 'googleapis.com' }],
+  } }),
+});
+
+test('con la API de sitios apagada, la búsqueda dice «no disponible» (no «no ha respondido bien»)', async () => {
+  const g = makeGoogle('k', async (url, init) => (String(url).includes('places.googleapis.com') ? disabled('Places API (New)') : mockFetch(url, init)));
+  await assert.rejects(findMeetingPlace(g, { friends, plan: 'cenar' }), (e) => e.code === 'quota' && e.reason === 'off' && e.status === 503);
+});
+
+test('con la matriz apagada, la búsqueda sigue con tiempos estimados', async () => {
+  const g = makeGoogle('k', async (url, init) => (String(url).includes('computeRouteMatrix') ? disabled('Routes API') : mockFetch(url, init)));
+  const r = await findMeetingPlace(g, { friends, plan: 'cenar' });
+  assert.ok(r.options.length >= 5 && r.options.every((o) => o.times.every((t) => t.est)));
+});
+
+test('una clave mala sigue siendo un error de verdad (403), no un «no disponible»', async () => {
+  const g = makeGoogle('k', async () => ({ ok: false, status: 403, text: async () => JSON.stringify({ error: { code: 403, message: 'API key not valid.', status: 'PERMISSION_DENIED', details: [{ reason: 'API_KEY_INVALID' }] } }) }));
+  await assert.rejects(g.nearby({ lat: 39.46, lng: -0.37 }, 500, ['bar']), (e) => e.status === 403 && e.code === undefined);
 });

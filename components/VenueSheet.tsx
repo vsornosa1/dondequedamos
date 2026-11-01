@@ -20,7 +20,7 @@ export default function VenueSheet({ option, isSelected, onChoose, onClose }: Pr
     fetch(`/api/venue?id=${encodeURIComponent(option.id)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
       .then((v: Venue) => { cache.set(option.id, v); if (live) setVenue(v); })
-      .catch((e: Error) => live && setFailed(e.message === '429' || e.message === '503' ? 'quota' : 'error'));
+      .catch((e: Error) => live && setFailed(e.message === '429' ? 'quota' : 'error'));
     return () => { live = false; };
   }, [option.id]);
 

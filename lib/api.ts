@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { makeGoogle } from './google.js';
 import { mockFetch } from './mockGoogle.js';
 import { pipeline, redisEnabled } from './redis';
-import { capsFromEnv, closedGoogle, guardGoogle, makeQuota, memoryStore, safetyFromEnv } from './quota.js';
+import { capsFromEnv, closedGoogle, creditFromEnv, guardGoogle, makeQuota, memoryStore, safetyFromEnv } from './quota.js';
 import { redisQuotaStore } from './quotaStore';
 import { freeRoutingFromEnv, withFreeRouting } from './freeRouting.js';
 
@@ -37,7 +37,7 @@ let localCounts: ReturnType<typeof memoryStore> | null = null;
 // - Sin clave (o con la clave «mock») fuera de producción, datos simulados para trabajar sin gastar
 //   (`npm run dev:mock` arranca así aunque el .env tenga la clave de verdad).
 // - Cada llamada a Google pasa por el guardián del tramo gratuito (lib/quota.js): lo que no cabe en el
-//   tramo gratis no se llama. Se cuenta en Upstash Redis; en producción sin Redis no se llama a Google,
+//   tramo gratis (ni en el crédito de Google, si se ha configurado con GOOGLE_CREDIT_*) no se llama. Se cuenta en Upstash Redis; en producción sin Redis no se llama a Google,
 //   porque sin una cuenta compartida no hay garantía de no pasarse. FREE_TIER_GUARD=off lo quita (y entonces
 //   Google cobra lo que pase del tramo gratis).
 // - Con OSRM_* u OTP_URL, la matriz y las rutas de esos transportes van a servidores propios, gratis.
@@ -57,7 +57,8 @@ export function getGoogle() {
     console.error('Sin Upstash Redis no se puede contar el tramo gratuito: no se llama a Google.');
     return withFreeRouting(closedGoogle(base), free);
   }
-  return withFreeRouting(guardGoogle(base, makeQuota({ store, caps: capsFromEnv(), safety: safetyFromEnv() })), free);
+  const quota = makeQuota({ store, caps: capsFromEnv(), safety: safetyFromEnv(), credit: creditFromEnv() });
+  return withFreeRouting(guardGoogle(base, quota), free);
 }
 
 export const json = (data: unknown, status = 200, headers?: HeadersInit) => NextResponse.json(data, { status, headers });
@@ -70,12 +71,16 @@ const madridTime = (ms: number) => new Intl.DateTimeFormat('es-ES', { hour: 'num
 export function fail(e: unknown) {
   const err = e as { status?: number; message?: string; code?: string; reason?: string; resetAt?: number };
   if (err.code === 'quota') {
-    const closed = err.reason === 'store';
+    // 'cap': se ha acabado el cupo de hoy. 'store': no se puede contar. 'off': Google tiene la API apagada
+    // (el corte automático por presupuesto) o la clave no la permite: hay que reactivarla a mano.
+    const closed = err.reason !== 'cap';
+    if (err.reason === 'off') console.error('Google Maps apagado o bloqueado para esta clave:', err.message);
+    const reset = Number.isFinite(err.resetAt) ? madridTime(err.resetAt!) : null;
     return json({
       error: closed
         ? 'Ahora mismo no podemos consultar Google Maps. Prueba en un rato.'
-        : `Por hoy se ha acabado el cupo gratis de Google Maps. Se renueva a las ${madridTime(err.resetAt!)}.`,
-      code: 'quota', reason: closed ? 'store' : 'cap', resetAt: err.resetAt, resetText: madridTime(err.resetAt!),
+        : `Por hoy se ha acabado el cupo gratis de Google Maps. Se renueva a las ${reset}.`,
+      code: 'quota', reason: closed ? 'store' : 'cap', resetAt: err.resetAt ?? null, resetText: reset,
     }, closed ? 503 : 429);
   }
   const status = err.status && err.status < 500 && err.status !== 403 && err.status !== 401 ? err.status : 502;
