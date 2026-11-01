@@ -69,6 +69,8 @@ GOOGLE_CREDIT_UNTIL=2027-01-27  # su fecha de fin
 3. **Si reactivas a mitad de mes**, el contador empieza en cero, pero Google ya habrá contado lo de ese mes. Baja el margen hasta el mes siguiente: `FREE_TIER_SAFETY=0.5`, o un tope concreto con `GOOGLE_FREE_CAPS='{"matrixEssentials":2000}'`.
 4. **Segunda red en Google Cloud** (por si algo se escapa: otra app con la misma clave, un error…):
    - **Restringe la clave** a «Places API (New)» y «Routes API» en APIs y servicios → Credenciales.
+     - **Restricción de aplicación: ninguna.** Las llamadas salen de los servidores de Vercel, sin Referer, y una restricción por sitios web las bloquea todas: la app se queda sin sugerencias de direcciones, sin búsquedas y sin rutas.
+     - No hace falta esa restricción: la clave nunca llega al navegador (las fotos se sirven con una redirección sin ella).
    - **Alerta de presupuesto** de 1 € en Facturación → Presupuestos y alertas, sobre el coste con los créditos descontados: avisa si algo se llega a cobrar de verdad. Avisa, pero no corta.
    - **Cuotas** de Routes API y Places API (New) lo más bajas que permita la consola, en APIs y servicios → Cuotas.
    - **Corte automático** (montado en `artful-cipher-513021-g1`): ver la sección siguiente.
