@@ -255,3 +255,14 @@ test('una clave restringida a sitios web o a otra API es «no disponible», con 
     await assert.rejects(g.autocomplete('calle col'), (e) => e.code === 'quota' && e.reason === 'off' && e.status === 503 && e.message === `Bloqueado: ${reason}`);
   }
 });
+
+test('si Google corta por cuota diaria (429), es «se ha acabado por hoy», y la matriz pasa a estimaciones', async () => {
+  const exhausted = { ok: false, status: 429, text: async () => JSON.stringify({ error: {
+    code: 429, status: 'RESOURCE_EXHAUSTED', message: "Quota exceeded for quota metric 'SearchNearbyRequest per day'",
+  } }) };
+  const nearbyOff = makeGoogle('k', async (url, init) => (String(url).includes('searchNearby') ? exhausted : mockFetch(url, init)));
+  await assert.rejects(findMeetingPlace(nearbyOff, { friends, plan: 'cenar' }), (e) => e.code === 'quota' && e.reason === 'cap' && e.status === 429 && e.resetAt > Date.now());
+  const matrixOff = makeGoogle('k', async (url, init) => (String(url).includes('computeRouteMatrix') ? exhausted : mockFetch(url, init)));
+  const r = await findMeetingPlace(matrixOff, { friends, plan: 'cenar' });
+  assert.ok(r.options.length >= 5 && r.options.every((o) => o.times.every((t) => t.est)));
+});
