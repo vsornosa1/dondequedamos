@@ -218,3 +218,31 @@ test('con crédito, la búsqueda tiene tiempos reales aunque se haya acabado la 
   assert.ok(r.options.every((o) => o.times.every((t) => !t.est)));
   assert.equal((await q.usage()).credit.spent, (calls.elements * 5) / 1000); // 5 milésimas por elemento
 });
+
+/* ---------- El corte automático por presupuesto ---------- */
+
+// Lo que contesta Google cuando la API está desactivada (el corte por presupuesto la apaga).
+const disabled = (service) => ({
+  ok: false, status: 403,
+  text: async () => JSON.stringify({ error: {
+    code: 403, status: 'PERMISSION_DENIED',
+    message: `${service} has not been used in project 123 before or it is disabled.`,
+    details: [{ '@type': 'type.googleapis.com/google.rpc.ErrorInfo', reason: 'SERVICE_DISABLED', domain: 'googleapis.com' }],
+  } }),
+});
+
+test('con la API de sitios apagada, la búsqueda dice «no disponible» (no «no ha respondido bien»)', async () => {
+  const g = makeGoogle('k', async (url, init) => (String(url).includes('places.googleapis.com') ? disabled('Places API (New)') : mockFetch(url, init)));
+  await assert.rejects(findMeetingPlace(g, { friends, plan: 'cenar' }), (e) => e.code === 'quota' && e.reason === 'off' && e.status === 503);
+});
+
+test('con la matriz apagada, la búsqueda sigue con tiempos estimados', async () => {
+  const g = makeGoogle('k', async (url, init) => (String(url).includes('computeRouteMatrix') ? disabled('Routes API') : mockFetch(url, init)));
+  const r = await findMeetingPlace(g, { friends, plan: 'cenar' });
+  assert.ok(r.options.length >= 5 && r.options.every((o) => o.times.every((t) => t.est)));
+});
+
+test('una clave mala sigue siendo un error de verdad (403), no un «no disponible»', async () => {
+  const g = makeGoogle('k', async () => ({ ok: false, status: 403, text: async () => JSON.stringify({ error: { code: 403, message: 'API key not valid.', status: 'PERMISSION_DENIED', details: [{ reason: 'API_KEY_INVALID' }] } }) }));
+  await assert.rejects(g.nearby({ lat: 39.46, lng: -0.37 }, 500, ['bar']), (e) => e.status === 403 && e.code === undefined);
+});

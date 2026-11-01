@@ -71,12 +71,16 @@ const madridTime = (ms: number) => new Intl.DateTimeFormat('es-ES', { hour: 'num
 export function fail(e: unknown) {
   const err = e as { status?: number; message?: string; code?: string; reason?: string; resetAt?: number };
   if (err.code === 'quota') {
-    const closed = err.reason === 'store';
+    // 'cap': se ha acabado el cupo de hoy. 'store': no se puede contar. 'off': Google tiene la API apagada
+    // (el corte automático por presupuesto) o la clave no la permite: hay que reactivarla a mano.
+    const closed = err.reason !== 'cap';
+    if (err.reason === 'off') console.error('Google Maps apagado o bloqueado para esta clave:', err.message);
+    const reset = Number.isFinite(err.resetAt) ? madridTime(err.resetAt!) : null;
     return json({
       error: closed
         ? 'Ahora mismo no podemos consultar Google Maps. Prueba en un rato.'
-        : `Por hoy se ha acabado el cupo gratis de Google Maps. Se renueva a las ${madridTime(err.resetAt!)}.`,
-      code: 'quota', reason: closed ? 'store' : 'cap', resetAt: err.resetAt, resetText: madridTime(err.resetAt!),
+        : `Por hoy se ha acabado el cupo gratis de Google Maps. Se renueva a las ${reset}.`,
+      code: 'quota', reason: closed ? 'store' : 'cap', resetAt: err.resetAt ?? null, resetText: reset,
     }, closed ? 503 : 429);
   }
   const status = err.status && err.status < 500 && err.status !== 403 && err.status !== 401 ? err.status : 502;
