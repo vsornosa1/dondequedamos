@@ -89,10 +89,11 @@ BA=$(gcloud billing projects describe artful-cipher-513021-g1 --format='value(bi
 gcloud billing budgets list --billing-account="$BA" --format=json
 ```
 
-En el presupuesto `Maps-stop-1EUR` tiene que salir:
+En el presupuesto tiene que salir:
 
-- `amount` en EUR de 1.
-- `budgetFilter.projects` con este proyecto.
+- `displayName: Maps-stop-1EUR`, **exactamente el nombre que comprueba la función**. Si no coinciden, la función descarta los avisos reales y el corte nunca salta, aunque la prueba manual funcione (el mensaje simulado lleva el nombre bueno). Pasó con un presupuesto llamado «Free tier gmaps».
+- `amount` en EUR de 1 (`"units": "1"`).
+- `budgetFilter.projects` con este proyecto. Sin ese filtro cuenta toda la cuenta de facturación, y el gasto de otro proyecto apagaría Maps.
 - `creditTypesTreatment: INCLUDE_ALL_CREDITS`.
 - `notificationsRule.pubsubTopic: projects/artful-cipher-513021-g1/topics/maps-budget-stop`.
 
