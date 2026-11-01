@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { makeGoogle } from './google.js';
 import { mockFetch } from './mockGoogle.js';
 import { pipeline, redisEnabled } from './redis';
-import { capsFromEnv, closedGoogle, guardGoogle, makeQuota, memoryStore, safetyFromEnv } from './quota.js';
+import { capsFromEnv, closedGoogle, creditFromEnv, guardGoogle, makeQuota, memoryStore, safetyFromEnv } from './quota.js';
 import { redisQuotaStore } from './quotaStore';
 import { freeRoutingFromEnv, withFreeRouting } from './freeRouting.js';
 
@@ -37,7 +37,7 @@ let localCounts: ReturnType<typeof memoryStore> | null = null;
 // - Sin clave (o con la clave «mock») fuera de producción, datos simulados para trabajar sin gastar
 //   (`npm run dev:mock` arranca así aunque el .env tenga la clave de verdad).
 // - Cada llamada a Google pasa por el guardián del tramo gratuito (lib/quota.js): lo que no cabe en el
-//   tramo gratis no se llama. Se cuenta en Upstash Redis; en producción sin Redis no se llama a Google,
+//   tramo gratis (ni en el crédito de Google, si se ha configurado con GOOGLE_CREDIT_*) no se llama. Se cuenta en Upstash Redis; en producción sin Redis no se llama a Google,
 //   porque sin una cuenta compartida no hay garantía de no pasarse. FREE_TIER_GUARD=off lo quita (y entonces
 //   Google cobra lo que pase del tramo gratis).
 // - Con OSRM_* u OTP_URL, la matriz y las rutas de esos transportes van a servidores propios, gratis.
@@ -57,7 +57,8 @@ export function getGoogle() {
     console.error('Sin Upstash Redis no se puede contar el tramo gratuito: no se llama a Google.');
     return withFreeRouting(closedGoogle(base), free);
   }
-  return withFreeRouting(guardGoogle(base, makeQuota({ store, caps: capsFromEnv(), safety: safetyFromEnv() })), free);
+  const quota = makeQuota({ store, caps: capsFromEnv(), safety: safetyFromEnv(), credit: creditFromEnv() });
+  return withFreeRouting(guardGoogle(base, quota), free);
 }
 
 export const json = (data: unknown, status = 200, headers?: HeadersInit) => NextResponse.json(data, { status, headers });
