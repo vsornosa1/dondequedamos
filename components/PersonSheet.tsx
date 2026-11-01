@@ -179,7 +179,7 @@ function Body({ person, index, color, canRemove, bias, onChange, onRemove, close
                 ? 'Ahora mismo no funciona el buscador de direcciones. Usa tu ubicación o una dirección reciente.'
                 : noSearch === 'error'
                   ? 'No hemos podido buscar la dirección. Prueba otra vez o usa tu ubicación.'
-                  : 'Sin resultados. Prueba con el barrio o una estación de metro.'}
+                  : 'Sin resultados. Prueba con la calle y el número, el barrio o una estación.'}
           </li>
         )}
       </ul>
