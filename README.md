@@ -66,9 +66,9 @@ Con Google de verdad, crea `.env.local` con `GOOGLE_MAPS_API_KEY` y arranca con 
 
 ## Licencia
 
-[PolyForm Noncommercial 1.0.0](LICENSE.md). Puedes usar, estudiar, modificar y compartir el código para **fines no comerciales**: uso personal, estudio, investigación, proyectos personales, organizaciones sin ánimo de lucro o centros educativos. **El uso comercial no está permitido.** Si te interesa, escríbeme por [GitHub](https://github.com/vsornosa1).
+[PolyForm Shield 1.0.0](LICENSE.md). Puedes usar, estudiar, modificar y compartir el código para lo que quieras, salvo para ofrecer un producto que compita con dondequedamos, **aunque sea gratis**: una copia con otro nombre o una versión para tu ciudad compiten con la original. Si quieres adaptarla a tu ciudad o mejorarla, manda un PR aquí y llegará a todos. Para cualquier otra cosa, escríbeme por [GitHub](https://github.com/vsornosa1).
 
-No es una licencia «open source» según la definición de la OSI: el código está a la vista para aprender de él, no para venderlo.
+No es una licencia «open source» según la definición de la OSI: el código está a la vista para aprender de él y mejorarlo juntos, no para montar otra app igual.
 
 Hay piezas con su propia licencia, que mandan sobre esta:
 
