@@ -27,6 +27,7 @@ export const PLANS: { id: Plan; label: string; txt: string }[] = [
   { id: 'cafe', label: 'Café', txt: 'un café' },
   { id: 'cenar', label: 'Cenar', txt: 'cenar' },
   { id: 'parque', label: 'Parque', txt: 'un parque' },
+  { id: 'biblioteca', label: 'Biblioteca', txt: 'estudiar' },
 ];
 // Copas ya no se ofrece, pero los enlaces que ya se mandaron con ese plan siguen diciéndolo bien.
 export const planTxt = (p: Plan) => (p === 'copas' ? 'unas copas' : PLANS.find((x) => x.id === p)?.txt || 'veros');
@@ -38,6 +39,8 @@ export const PLAN_PATHS: Record<Plan, string[]> = {
   cenar: ['M5 3v5a3 3 0 0 0 6 0V3M8 3v18', 'M18 21V3c-2.2 1.5-3 4.5-3 8h3'],
   copas: ['M5 4h14l-7 8.5z', 'M12 12.5V20M8 20.5h8'],
   parque: ['M12 21v-5', 'M12 3.5a4.5 4.5 0 0 0-4.3 5.9A4 4 0 0 0 9 17h6a4 4 0 0 0 1.3-7.6A4.5 4.5 0 0 0 12 3.5z'],
+  // Un libro abierto.
+  biblioteca: ['M12 6.6C10.2 5.2 7.6 4.6 4 5v13.4c3.6-.4 6.2.2 8 1.6', 'M12 6.6c1.8-1.4 4.4-2 8-1.6v13.4c-3.6-.4-6.2.2-8 1.6', 'M12 6.6V20'],
 };
 
 export const MODE_SHAPES: Record<Mode, ReactNode> = {

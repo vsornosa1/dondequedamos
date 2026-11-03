@@ -177,7 +177,7 @@ function WhenPicker({ when, onWhen }: { when: When; onWhen: (w: When) => void })
           </p>
         </div>
       )}
-      {!later && <p className="hint">El metro de un domingo no es el de un martes a las 9: usamos los horarios y el tráfico del momento.</p>}
+      {!later && <p className="hint">El metro de un domingo no es el de un martes a las 9: usamos los horarios del momento.</p>}
     </div>
   );
 }
