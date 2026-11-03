@@ -1,5 +1,5 @@
 export type Mode = 'TRANSIT' | 'DRIVE' | 'BICYCLE' | 'WALK';
-export type Plan = 'canas' | 'cafe' | 'cenar' | 'copas' | 'parque';
+export type Plan = 'canas' | 'cafe' | 'cenar' | 'copas' | 'parque' | 'biblioteca';
 export type Sort = 'justo' | 'rapido';
 export type LatLng = { lat: number; lng: number };
 

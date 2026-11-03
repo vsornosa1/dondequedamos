@@ -73,7 +73,13 @@ h1, h2 { text-wrap: balance; }
 .add-person span { display: grid; place-items: center; width: 34px; height: 34px; flex: none; border: 2px dashed var(--ink-2); border-radius: 50%; color: var(--ink-2); font-weight: 800; font-size: 18px; }
 .recall { width: 100%; margin-top: 10px; padding: 12px 14px; border: 2px solid var(--rule); border-radius: var(--r-s); background: var(--paper); font-weight: 700; text-align: left; }
 
-.plans { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.plans { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.plans button { grid-column: span 2; }
+.plans button:nth-child(4) { grid-column: 2 / span 2; } /* tres arriba y dos centrados debajo */
+@media (min-width: 600px) {
+  .plans { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .plans button, .plans button:nth-child(4) { grid-column: auto; }
+}
 .plans button { display: grid; justify-items: center; align-content: center; gap: 5px; min-height: 72px; padding: 8px 2px; border: 2px solid var(--rule); border-radius: var(--r-s); background: var(--paper); font-size: 13px; font-weight: 800; }
 .plans button[aria-checked="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
 .plans .ico { width: 28px; height: 28px; }

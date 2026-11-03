@@ -41,3 +41,17 @@ sh scripts/render.sh mux public/music-rumba.wav out/dondequedamos-demo-rumba.mp4
 - **Tiempos:** todos están en `src/timing.ts`. Después de cambiarlos, vuelve a ejecutar `sh music/master.sh` para que los golpes de la música sigan cuadrando.
 - **Datos de la historia:** están en `src/data/scenario.json`. Salen de la búsqueda de la app sobre el Google simulado de `lib/mockGoogle.js`, así que son ilustrativos.
 - **Rutas:** las calles salen de OSRM y están en `src/data/routes.json`. Se regeneran con `node scripts/fetch-routes.mjs`.
+
+## El vídeo del relanzamiento («ha vuelto»)
+
+20 s, mismo formato y estilo: se hizo viral, se acabó el cupo gratis de Google, la pausé, y ha vuelto preparada para no costar dinero. Es la composición `Vuelve`.
+
+- `design/VUELVE.md`: el brief y el guion, con de dónde sale cada dato.
+- `src/vuelve/`: los tiempos (`timing.ts`) y las escenas (`Vuelve.tsx`). Reutiliza los blobs, el logo, los titulares y el perfil de València del cierre.
+- `music/score_vuelve.py`: su música, con los instrumentos y la mezcla de `music/score.py`.
+- `out/dondequedamos-vuelve.mp4`: el vídeo final. `out/vuelve-poster.png`: la portada.
+
+```sh
+node scripts/cues-vuelve.ts && sh music/master.sh score_vuelve.py public/music-vuelve.wav
+sh scripts/render-vuelve.sh   # en un contenedor sin el navegador de Remotion: BROWSER=/ruta/al/chrome-headless-shell sh scripts/render-vuelve.sh
+```

@@ -19,12 +19,12 @@ const ROW_SIZE = 112;
 
 // València in one line: a palm, the Torres de Serranos, the Micalet and the cathedral
 // dome, l'Hemisfèric, another palm. Drawn on a 1080 x 300 box, ground at y = 280.
-const crenel = (x0: number, x1: number, y: number) => {
+export const crenel = (x0: number, x1: number, y: number) => {
   let d = `M${x0} 280V${y}`;
   for (let x = x0; x < x1; x += 20) d += `h10v-10h10v10`;
   return `${d}V280`;
 };
-const SKYLINE = [
+export const SKYLINE = [
   'M0 280H1080',
   'M78 280C80 236 86 196 100 160', 'M100 160C88 150 70 152 56 164', 'M100 160C92 142 78 134 62 136', 'M100 160C104 140 116 130 134 130', 'M100 160C114 152 130 156 142 170',
   crenel(166, 236, 150), crenel(296, 366, 150), 'M236 280V186H296V280', 'M252 280V236Q266 214 280 236V280', 'M190 200V216M212 200V216M320 200V216M342 200V216',

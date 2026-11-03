@@ -12,6 +12,9 @@ docs/
 video/out/*
 !video/out/dondequedamos-demo.mp4
 !video/out/poster.png
+!video/out/dondequedamos-vuelve.mp4
+!video/out/vuelve-poster.png
+video/music/__pycache__
 video/checks
 video/music/*.wav
 video/public/music.wav
