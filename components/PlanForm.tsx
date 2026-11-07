@@ -1,23 +1,26 @@
 'use client';
 // La primera pantalla: quién viene (cada uno es una línea), qué plan y cuándo.
 import { Fragment, useRef, type CSSProperties } from 'react';
-import { COLORS, PLANS, ClockIcon, ModeIcon, PlanIcon, MODE_LABEL } from './brand';
+import { COLORS, PLANS, ClockIcon, FlagIcon, ModeIcon, PlanIcon, MODE_LABEL } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
 import { dayParts, defaultLater, hhmm, initialOf, nameOf, whenText } from '@/lib/client';
-import type { Person, Plan, When } from '@/lib/types';
+import type { Mode, Person, Plan, Trip, When } from '@/lib/types';
 
 type Props = {
   people: Person[];
   plan: Plan;
   when: When;
+  trip: Trip;
   recall: { names: string; apply: () => void } | null;
   onOpenPerson: (i: number) => void;
+  onOpenTrip: () => void;
+  onTrip: (t: Trip) => void;
   onAddPerson: () => void;
   onPlan: (p: Plan) => void;
   onWhen: (w: When) => void;
 };
 
-export default function PlanForm({ people, plan, when, recall, onOpenPerson, onAddPerson, onPlan, onWhen }: Props) {
+export default function PlanForm({ people, plan, when, trip, recall, onOpenPerson, onOpenTrip, onTrip, onAddPerson, onPlan, onWhen }: Props) {
   return (
     <div className="view plan-view">
       <section className="block" aria-labelledby="h-who">
@@ -36,10 +39,26 @@ export default function PlanForm({ people, plan, when, recall, onOpenPerson, onA
       </section>
 
       <section className="block" aria-labelledby="h-plan">
-        <h2 id="h-plan">Qué plan</h2>
-        <Plans plan={plan} onPlan={onPlan} />
-        {plan === 'canas' && people.some((p) => p.modes.includes('DRIVE')) && (
-          <p className="hint plan-note">Con cañas no contamos el coche: quien lo tenga irá a pie, en bici o en bus o metro.</p>
+        <h2 id="h-plan">{trip.on ? 'Adónde vais' : 'Qué plan'}</h2>
+        {/* O buscamos el sitio, o ya lo tenéis y buscamos dónde quedar antes para ir juntos. */}
+        <div className="seg2 goal" role="radiogroup" aria-label="Qué buscáis">
+          <button type="button" role="radio" aria-checked={!trip.on} onClick={() => onTrip({ ...trip, on: false })}>Buscar sitio</button>
+          <button
+            type="button" role="radio" aria-checked={trip.on}
+            onClick={() => { if (trip.on) return; onTrip({ ...trip, on: true }); if (!trip.loc) onOpenTrip(); }}
+          >
+            Ya tenemos destino
+          </button>
+        </div>
+        {trip.on ? (
+          <TripPicker trip={trip} people={people} onOpen={onOpenTrip} onTrip={onTrip} />
+        ) : (
+          <>
+            <Plans plan={plan} onPlan={onPlan} />
+            {plan === 'canas' && people.some((p) => p.modes.includes('DRIVE')) && (
+              <p className="hint plan-note">Con cañas no contamos el coche: quien lo tenga irá a pie, en bici o en bus o metro.</p>
+            )}
+          </>
         )}
       </section>
 
@@ -84,6 +103,44 @@ function People({ people, onOpen }: { people: Person[]; onOpen: (i: number) => v
         </li>
       ))}
     </ol>
+  );
+}
+
+// Cómo seguís juntos desde el punto de encuentro: de lo más habitual (compartir coche) a lo menos.
+const TOGETHER: Mode[] = ['DRIVE', 'TRANSIT', 'BICYCLE', 'WALK'];
+
+function TripPicker({ trip, people, onOpen, onTrip }: { trip: Trip; people: Person[]; onOpen: () => void; onTrip: (t: Trip) => void }) {
+  const drivers = people.some((p) => p.modes.includes('DRIVE'));
+  const note = {
+    DRIVE: drivers
+      ? 'Quien tiene coche lo lleva hasta el punto de encuentro y desde allí vais juntos. Quedáis en una gasolinera o un aparcamiento.'
+      : null,
+    TRANSIT: 'Quedáis en una estación y desde allí seguís juntos en bus, metro o tren.',
+    BICYCLE: 'Quien tiene bici la lleva hasta el punto de encuentro. Quedáis en una cafetería.',
+    WALK: 'Quedáis en una cafetería y desde allí seguís juntos andando.',
+  }[trip.mode];
+  return (
+    <div className="trip">
+      <button type="button" className={trip.loc ? 'dest-btn' : 'dest-btn missing'} onClick={onOpen}>
+        <span className="stop dest" aria-hidden="true"><FlagIcon /></span>
+        <span className="person-main">
+          <span className="person-name">{trip.loc ? trip.label : '¿Adónde vais?'}</span>
+          <span className={trip.loc ? 'person-where' : 'person-where missing'}>{trip.loc ? 'Destino. Toca para cambiarlo' : 'El pueblo o el sitio al que vais'}</span>
+        </span>
+      </button>
+      <p className="ps-label" id="h-together">Desde el punto de encuentro, vais juntos</p>
+      <div className="plans four" role="radiogroup" aria-labelledby="h-together">
+        {TOGETHER.map((m) => (
+          <button key={m} type="button" role="radio" aria-checked={trip.mode === m} onClick={() => onTrip({ ...trip, mode: m })}>
+            <ModeIcon mode={m} />
+            <span>{MODE_LABEL[m]}</span>
+          </button>
+        ))}
+      </div>
+      {note
+        ? <p className="hint plan-note">{note}</p>
+        : <p className="hint plan-note warn">Para ir juntos en coche, alguien tiene que llevarlo: marca «Coche» a quien lo tenga.</p>}
+    </div>
   );
 }
 

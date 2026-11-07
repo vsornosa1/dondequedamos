@@ -109,6 +109,21 @@ h1, h2 { text-wrap: balance; }
 .when-sum b { display: block; margin-bottom: 1px; font-size: 16px; font-weight: 800; color: var(--ink); text-wrap: balance; }
 .hint { font-size: 14px; color: var(--ink-2); }
 .plan-note { margin-top: 10px; }
+.plan-note.warn { color: var(--danger); font-weight: 700; }
+
+/* «Ya tenemos destino»: el destino (una parada oscura con bandera) y cómo seguís juntos. */
+.seg2.goal { margin-bottom: 14px; }
+.seg2.goal button { font-size: 15px; }
+.stop.dest { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.stop.dest .ico { width: 18px; height: 18px; }
+.stop.big.dest .ico { width: 22px; height: 22px; }
+.dest-btn { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 12px; width: 100%; min-height: 64px; margin-bottom: 14px; padding: 10px 12px; border: 2px solid var(--rule); border-radius: var(--r-s); background: var(--paper); text-align: left; }
+.dest-btn.missing { border-style: dashed; border-color: var(--ink-2); }
+.plans.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.plans.four button, .plans.four button:nth-child(4) { grid-column: auto; min-height: 66px; }
+.plans.four .ico { width: 26px; height: 26px; }
+.ps-title { flex: 1; min-width: 0; font-weight: 800; font-size: 22px; line-height: 1.2; }
+.trip-hint { margin-top: 14px; }
 .privacy { padding: 4px 4px 0; font-size: 14px; color: var(--ink-2); }
 
 /* ---------- Barra inferior ---------- */
@@ -189,6 +204,7 @@ h1, h2 { text-wrap: balance; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; font-size: 13px; color: var(--ink-2); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend svg { width: 22px; height: 12px; }
+.legend .dg-trunk { stroke-width: 5; }
 .note, .swipe-hint { margin-top: 8px; font-size: 13px; color: var(--ink-2); }
 .dg-grid { stroke: var(--rule); stroke-width: 1; stroke-dasharray: 2 4; }
 .dg-tick { fill: var(--ink-2); font-size: 12px; font-weight: 600; }
@@ -199,6 +215,9 @@ h1, h2 { text-wrap: balance; }
 .dg-stop { fill: var(--panel); stroke: var(--c); stroke-width: 4; }
 .dg-ghost { fill: none; stroke: var(--ink-2); stroke-width: 2; stroke-dasharray: 3 3; }
 .dg-station { fill: var(--signal); stroke: var(--ink); stroke-width: 4; }
+.dg-dest { fill: var(--ink); stroke: var(--ink); stroke-width: 4; }
+.dg-trunk { stroke: var(--ink); stroke-width: 9; stroke-linecap: round; }
+.dg-shared { fill: var(--ink); font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
 
 .alts-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: 6px 0 10px; }
 .alts-head h2 { font-weight: 800; font-size: 22px; }
@@ -243,6 +262,8 @@ h1, h2 { text-wrap: balance; }
 .way-go .ico { width: 16px; height: 16px; }
 .way:active .way-go { background: var(--rule); }
 .shared .map, .shared .ways { margin-bottom: 12px; }
+.ways li.way-then .way { border-top: 2px dashed var(--rule); }
+.pin-meet.dest { width: 36px; height: 44px; cursor: default; }
 
 /* Cambiar de sitio desde el propio mapa, sin subir hasta las tarjetas. */
 .map-wrap { position: relative; }

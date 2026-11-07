@@ -16,6 +16,7 @@ export function SponsorLink() {
   );
 }
 
+export const INK = '#0E1A2B';
 export const COLORS = ['#E5352B', '#1F6FD1', '#12A150', '#8B4FD3', '#F07D19', '#0FA3B1', '#E0569B', '#7A5A3A'];
 
 export const MODES: Mode[] = ['TRANSIT', 'DRIVE', 'BICYCLE', 'WALK'];
@@ -43,6 +44,12 @@ export const PLAN_PATHS: Record<Plan, string[]> = {
   biblioteca: ['M12 6.6C10.2 5.2 7.6 4.6 4 5v13.4c3.6-.4 6.2.2 8 1.6', 'M12 6.6c1.8-1.4 4.4-2 8-1.6v13.4c-3.6-.4-6.2.2-8 1.6', 'M12 6.6V20'],
 };
 
+// Con destino, el cartel no lleva plan: dos líneas que se juntan y siguen como una sola.
+export type Badge = Plan | 'juntos';
+export const BADGE_PATHS: Record<Badge, string[]> = { ...PLAN_PATHS, juntos: ['M4 5.5l7 6.5M4 18.5l7-6.5', 'M11 12h9', 'M16.5 8.5 20 12l-3.5 3.5'] };
+// La bandera del destino, en el mapa.
+const FLAG = ['M7 21V4', 'M7 4.5h10l-2.5 4 2.5 4H7'];
+
 export const MODE_SHAPES: Record<Mode, ReactNode> = {
   TRANSIT: (<><rect x="5" y="3" width="14" height="14" rx="3" /><path d="M5 11h14M9 21l-2-3M15 21l2-3" /><circle cx="9" cy="14" r=".6" fill="currentColor" /><circle cx="15" cy="14" r=".6" fill="currentColor" /></>),
   DRIVE: (<><path d="M4 16v-4l2-5h12l2 5v4z" /><path d="M4 12h16" /><circle cx="8" cy="16" r="1.8" /><circle cx="16" cy="16" r="1.8" /></>),
@@ -56,13 +63,17 @@ export function ModeIcon({ mode, className = 'ico' }: IconProps & { mode: Mode }
   return <svg className={className} viewBox="0 0 24 24" aria-hidden="true">{MODE_SHAPES[mode]}</svg>;
 }
 
-export function PlanIcon({ plan, className = 'ico' }: IconProps & { plan: Plan }) {
-  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true">{PLAN_PATHS[plan].map((d) => <path key={d} d={d} />)}</svg>;
+export function PlanIcon({ plan, className = 'ico' }: IconProps & { plan: Badge }) {
+  return <svg className={className} viewBox="0 0 24 24" aria-hidden="true">{BADGE_PATHS[plan].map((d) => <path key={d} d={d} />)}</svg>;
 }
 
+const pinHtml = (fill: string, stroke: string, paths: string[]) =>
+  `<svg viewBox="0 0 44 54" aria-hidden="true"><path d="M22 2.5C11.2 2.5 3.5 10.4 3.5 20.8c0 13.6 18.5 30.7 18.5 30.7s18.5-17.1 18.5-30.7C40.5 10.4 32.8 2.5 22 2.5z" fill="${fill}" stroke="#0E1A2B" stroke-width="3"/><g transform="translate(10 8)" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${paths.map((d) => `<path d="${d}"/>`).join('')}</g></svg>`;
+
 // El marcador amarillo del mapa: el plan dentro de una chincheta, la punta en el sitio.
-export const meetPinHtml = (plan: Plan) =>
-  `<svg viewBox="0 0 44 54" aria-hidden="true"><path d="M22 2.5C11.2 2.5 3.5 10.4 3.5 20.8c0 13.6 18.5 30.7 18.5 30.7s18.5-17.1 18.5-30.7C40.5 10.4 32.8 2.5 22 2.5z" fill="#FFD100" stroke="#0E1A2B" stroke-width="3"/><g transform="translate(10 8)" fill="none" stroke="#0E1A2B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${PLAN_PATHS[plan].map((d) => `<path d="${d}"/>`).join('')}</g></svg>`;
+export const meetPinHtml = (plan: Badge) => pinHtml('#FFD100', '#0E1A2B', BADGE_PATHS[plan]);
+// El destino, cuando ya lo tenéis: una bandera en una chincheta oscura.
+export const destPinHtml = () => pinHtml('#0E1A2B', '#FFFFFF', FLAG);
 
 export function Mark({ className = 'mark' }: IconProps) {
   return (
@@ -102,5 +113,6 @@ export const ShareIcon = icon(<><path d="M12 3v12M7 8l5-5 5 5" /><path d="M5 13v
 export const HeartIcon = icon(<path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7a4.3 4.3 0 0 1 7.5 2.8C19.5 15.4 12 20 12 20z" />);
 export const CopyIcon = icon(<><rect x="8" y="8" width="12" height="12" rx="2.5" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>);
 export const ClockIcon = icon(<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>);
+export const FlagIcon = icon(<>{FLAG.map((d) => <path key={d} d={d} />)}</>);
 export const PinIcon = icon(<><path d="M12 21s-6.5-5.8-6.5-11a6.5 6.5 0 0 1 13 0c0 5.2-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></>);
 export const ExternalIcon = icon(<><path d="M14 4h6v6M20 4l-9 9" /><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></>);

@@ -60,10 +60,15 @@ export default function OptionsCarousel({ options, selectedId, sort, onSelect }:
           <span className="card-sub">
             {[o.type, priceText(o.price), o.rating ? `${ratingText(o.rating)} ★` : '', o.openNow === false ? 'cerrado ahora' : ''].filter(Boolean).join(', ')}
           </span>
+          {/* Con destino, lo que cuenta es cuándo llegáis allí: lo que tarda cada uno al punto más el tramo juntos. */}
           <span className="card-fig">
-            {sort === 'rapido'
-              ? <><b>{Math.round(o.rapido.avg)} min</b>de media</>
-              : <><b>{Math.round(o.justo.max)} min</b>como mucho</>}
+            {o.shared
+              ? sort === 'rapido'
+                ? <><b>{Math.round(o.rapido.avg + o.shared.min)} min</b>de media</>
+                : <><b>{Math.round(o.justo.max + o.shared.min)} min</b>hasta llegar</>
+              : sort === 'rapido'
+                ? <><b>{Math.round(o.rapido.avg)} min</b>de media</>
+                : <><b>{Math.round(o.justo.max)} min</b>como mucho</>}
           </span>
           {/* Como en el diagrama: el sitio a la derecha y cada uno más lejos cuanto más tarda. */}
           <span className="strip" aria-hidden="true">

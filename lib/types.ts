@@ -17,6 +17,7 @@ export type Option = {
   rating: number | null; ratings: number; price: string | null; openNow: boolean | null;
   url: string; loc: LatLng; photo: Photo | null;
   times: Time[]; justo: Stats; rapido: Stats;
+  shared?: Time; // con destino: lo que tardáis juntos desde aquí hasta él
 };
 
 export type Result = {
@@ -24,7 +25,12 @@ export type Result = {
   zone: LatLng & { radius: number };
   midpoint: { loc: LatLng; times: Time[]; stats: Stats };
   options: Option[];
+  // Con destino: adónde vais, cómo seguís juntos y lo que tardaría cada uno yendo por su cuenta.
+  trip?: { to: LatLng; mode: Mode; direct: Time[] };
 };
+
+// «Ya tenemos destino»: adónde vais y en qué seguís juntos desde el punto de encuentro.
+export type Trip = { on: boolean; loc: LatLng | null; label: string; mode: Mode };
 
 export type Venue = {
   id: string; name: string; type: string; address: string;
@@ -37,6 +43,8 @@ export type Proposal = {
   name: string; address: string; type: string; placeId: string | null; loc: LatLng | null;
   plan: Plan; when: string | null; people: { name: string; mode: Mode; min: number }[];
   routes: ([number, number][] | null)[]; // la de cada uno, sin sus primeros metros ([lng, lat])
+  // Con destino: adónde vais después y lo que tardáis juntos desde el punto de encuentro.
+  trip: { name: string; loc: LatLng; mode: Mode; min: number; route: [number, number][] | null } | null;
 };
 
 export type Line = { name: string; mode: Mode; min: number; est?: boolean; ghost?: number | null; color: string };

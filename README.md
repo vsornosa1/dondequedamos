@@ -15,13 +15,19 @@ El punto medio del mapa engaña. ¿Dónde quedamos? busca el sitio donde **todos
 
 Funciona en toda España.
 
+### Ya tenéis destino
+
+Si ya sabéis adónde vais (por ejemplo, de Valencia y de Aldaia a Almussafes), marca «Ya tenemos destino», elige el sitio y cómo seguís juntos desde el punto de encuentro (en coche, en bus o tren, en bici o andando). La app busca dónde quedar antes, de camino: una gasolinera o un aparcamiento si vais en coche, una estación si vais en transporte público y una cafetería si vais andando o en bici.
+
+Gana el punto que os deja antes en el destino (quien más tarda en llegar al punto, más el trayecto juntos), repartiendo lo que cada uno hace solo y sin que nadie dé rodeos: si a alguien le pilla de camino se le recoge allí, y si alguien vive en el destino se le espera allí. Quien tiene coche lo lleva hasta el punto. El enlace que se manda al grupo lleva también el destino y el trayecto juntos.
+
 ## Cómo busca: rápido y preguntando lo mínimo a Google
 
 1. **Estima en local, sin APIs.** Distancia en línea recta por un factor de rodeo, a una velocidad media por transporte. Con eso busca el punto más justo en una rejilla que se va estrechando. Son milisegundos.
 2. **Comprueba esa zona con tiempos reales.** El punto estimado, un anillo de 6 puntos alrededor y el centro geográfico, en una sola matriz de rutas de Google por transporte. Andando solo pregunta por lo que está a menos de 25 minutos estimados.
 3. **Busca los sitios reales en la zona ganadora** y corrige la estimación de cada persona con lo que se desvió en el paso 2. Solo los 8 sitios más prometedores van a Google.
 
-Son unos 50 cálculos de ruta por búsqueda, y las búsquedas repetidas salen de caché. El código está en `lib/core.js` y `lib/search.js`.
+Son unos 50 cálculos de ruta por búsqueda, y las búsquedas repetidas salen de caché. Con destino se añade una matriz pequeña con el trayecto juntos desde cada punto (unos 15 elementos más). El código está en `lib/core.js` y `lib/search.js` (`findMeetingPlace` y, con destino, `findMeetingPoint`).
 
 ## A 0 €
 

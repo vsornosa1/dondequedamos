@@ -5,17 +5,18 @@ import { useRouter } from 'next/navigation';
 import PlanForm from './PlanForm';
 import Results from './Results';
 import PersonSheet from './PersonSheet';
+import TripSheet from './TripSheet';
 import VenueSheet from './VenueSheet';
 import Loader from './Loader';
-import { COLORS, MODE_TXT, Mark, ShareIcon, CopyIcon, SponsorLink, SPONSORS_URL, planTxt } from './brand';
+import { COLORS, MODE_LABEL, MODE_TXT, Mark, ShareIcon, CopyIcon, SponsorLink, SPONSORS_URL, planTxt } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
 import { api, isQuota, listNames, load, nameOf, save, uid, wait, whenDate } from '@/lib/client';
 import { track } from './Analytics';
 import { encodeProposal } from '@/lib/share.js';
-import { routeForLink } from '@/lib/polyline.js';
+import { routeForLink, routeForSharedLink } from '@/lib/polyline.js';
 import { routeFor, routeIfReady } from '@/lib/routes';
 import { DEFAULT_MODES } from '@/lib/core.js';
-import type { Mode, Option, Person, Plan, Result, Sort, When } from '@/lib/types';
+import type { Mode, Option, Person, Plan, Result, Sort, Trip, When } from '@/lib/types';
 
 const newPerson = (): Person => ({ id: uid(), name: '', modes: [...DEFAULT_MODES] as Mode[], loc: null, label: '' });
 type Saved = Omit<Person, 'id'>;
@@ -32,10 +33,13 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
   const [people, setPeople] = useState<Person[]>(() => [newPerson(), newPerson()]);
   const [plan, setPlan] = useState<Plan>('canas');
   const [when, setWhen] = useState<When>({ kind: 'now' });
+  // «Ya tenemos destino»: adónde vais y en qué seguís juntos desde el punto de encuentro.
+  const [trip, setTrip] = useState<Trip>({ on: false, loc: null, label: '', mode: 'DRIVE' });
+  const [tripOpen, setTripOpen] = useState(false);
   const [view, setView] = useState<'plan' | 'results'>('plan');
   const [result, setResult] = useState<Result | null>(null);
   // Copia de quién venía y cómo en el momento de buscar: los resultados no cambian si luego editas.
-  const [searched, setSearched] = useState<{ people: Person[]; plan: Plan; when: When } | null>(null);
+  const [searched, setSearched] = useState<{ people: Person[]; plan: Plan; when: When; trip: Trip | null } | null>(null);
   const [selectedId, setSelectedId] = useState('');
   const [sort, setSort] = useState<Sort>('justo');
   const [editing, setEditing] = useState<number | null>(null);
@@ -77,27 +81,35 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
 
   const missing = people.findIndex((p) => !p.loc);
   const missingCount = people.filter((p) => !p.loc).length;
+  const noDest = trip.on && !trip.loc;
+  const noDriver = trip.on && trip.mode === 'DRIVE' && !people.some((p) => p.modes.includes('DRIVE'));
 
   async function search() {
     if (missing >= 0) return setEditing(missing);
+    if (noDest) return setTripOpen(true);
+    if (noDriver) return setEditing(0);
     setError(null);
     setLoading(true);
     const started = performance.now();
     try {
       const at = whenDate(when);
+      const going = trip.on && trip.loc ? { to: trip.loc, together: trip.mode } : {};
       const r = await api<Result>('/api/search', {
-        friends: people.map((p) => ({ modes: p.modes, loc: p.loc })), plan, when: at ? at.toISOString() : undefined,
+        friends: people.map((p) => ({ modes: p.modes, loc: p.loc })), plan, when: at ? at.toISOString() : undefined, ...going,
       });
       await wait(Math.max(0, 900 - (performance.now() - started))); // que la animación llegue a leerse
       const best = [...r.options].sort((a, b) => a.justo.score - b.justo.score)[0];
-      setSearched({ people, plan, when });
+      setSearched({ people, plan, when, trip: trip.on ? trip : null });
       setResult(r);
       setSelectedId(best.id);
       setSort('justo');
       setView('results');
       save('dq:ultimo', people.map(({ name, modes, loc, label }) => ({ name, modes, loc, label })));
       window.scrollTo({ top: 0 });
-      track('Búsqueda', { plan, personas: people.length, hora: when.kind === 'now' ? 'ahora' : 'más tarde', estimada: r.options.some((o) => o.times.some((t) => t.est)) });
+      track('Búsqueda', {
+        plan: trip.on ? `destino (${MODE_LABEL[trip.mode]})` : plan, personas: people.length,
+        hora: when.kind === 'now' ? 'ahora' : 'más tarde', estimada: r.options.some((o) => o.times.some((t) => t.est)),
+      });
     } catch (e) {
       // Sin cupo gratis no es un fallo: la app es gratis y Google Maps cobra cada búsqueda.
       if (isQuota(e) && e.reason === 'cap') setError({ text: `Por hoy se han acabado las búsquedas gratis. Vuelven a las ${e.resetText}.`, quota: true });
@@ -119,6 +131,8 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
     const t = setTimeout(async () => {
       // Que el enlace lleve las rutas de todos: se esperan (4 s como mucho) antes de pedirlo.
       const all = searched.people.map((p, i) => (p.loc ? routeFor(p.loc, selected.times[i].mode, selected.loc, result.departureTime) : null));
+      const dest = searched.trip?.loc;
+      if (dest && selected.shared?.min) all.push(routeFor(selected.loc, selected.shared.mode, dest, result.departureTime));
       await Promise.race([Promise.all(all), wait(4000)]);
       if (!live) return;
       const long = new URL(shareData(selected).url).pathname.slice(3);
@@ -136,14 +150,22 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
       const r = p.loc ? routeIfReady(p.loc, o.times[i].mode, o.loc) : null;
       return r ? routeForLink(r) : '';
     });
+    // Con destino, el enlace lleva también adónde vais y el trayecto juntos (desde un sitio público).
+    const t = s.trip?.loc && o.shared ? { ...o.shared, to: s.trip.loc, label: s.trip.label } : null;
+    const together = t ? routeIfReady(o.loc, t.mode, t.to) : null;
     const payload = {
-      n: o.name, a: o.address, t: o.type, i: o.id, l: [o.loc.lat, o.loc.lng], pl: s.plan, w: result!.departureTime,
-      p: o.times.map((t, i) => [nameOf(s.people[i], i), t.mode, t.min]), r: routes,
+      n: o.name, a: o.address, t: o.type, i: o.id, l: [o.loc.lat, o.loc.lng], pl: t ? null : s.plan, w: result!.departureTime,
+      p: o.times.map((x, i) => [nameOf(s.people[i], i), x.mode, x.min]), r: routes,
+      d: t ? [t.label, t.to.lat, t.to.lng, t.mode, t.min, together ? routeForSharedLink(together) : ''] : null,
     };
     const long = encodeProposal(payload);
     const url = `${window.location.origin}/p/${shortIds.current.get(long) || long}`;
-    const lines = o.times.map((t, i) => `• ${nameOf(s.people[i], i)}: ${t.est ? '≈' : ''}${t.min} min ${MODE_TXT[t.mode]}`);
-    const text = `📍 ¿Quedamos en ${o.name} para ${planTxt(s.plan)}?\n${o.address}\n\n⏱️ Lo que tarda cada uno:\n${lines.join('\n')}\n\nEs el sitio más justo para todos:`;
+    const lines = o.times.map((x, i) => `• ${nameOf(s.people[i], i)}: ${x.est ? '≈' : ''}${x.min} min ${MODE_TXT[x.mode]}`);
+    const text = t
+      ? (t.min
+        ? `📍 ¿Quedamos en ${o.name} para ir juntos a ${t.label}?\n${o.address}\n\n⏱️ Lo que tarda cada uno hasta aquí:\n${lines.join('\n')}\n\n➡️ Y desde aquí, ${t.est ? '≈' : ''}${t.min} min juntos ${MODE_TXT[t.mode]} hasta ${t.label}. Es el punto de encuentro más justo:`
+        : `📍 ¿Quedamos directamente en ${t.label}?\n${o.name}, ${o.address}\n\n⏱️ Lo que tarda cada uno:\n${lines.join('\n')}\n\nOs pilla de camino: no hace falta quedar antes.`)
+      : `📍 ¿Quedamos en ${o.name} para ${planTxt(s.plan)}?\n${o.address}\n\n⏱️ Lo que tarda cada uno:\n${lines.join('\n')}\n\nEs el sitio más justo para todos:`;
     return { url, text };
   }
 
@@ -183,14 +205,14 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
 
       {showResults ? (
         <Results
-          result={result} people={searched.people} plan={searched.plan} when={searched.when} selected={selected} sort={sort}
+          result={result} people={searched.people} plan={searched.plan} when={searched.when} trip={searched.trip} selected={selected} sort={sort}
           onSelect={setSelectedId} onSort={setSort} onOpenVenue={() => setVenueOpen(true)}
           onEdit={() => { setView('plan'); window.scrollTo({ top: 0 }); }}
         />
       ) : (
         <PlanForm
-          people={people} plan={plan} when={when} recall={recall}
-          onOpenPerson={setEditing} onAddPerson={addPerson} onPlan={setPlan} onWhen={setWhen}
+          people={people} plan={plan} when={when} trip={trip} recall={recall}
+          onOpenPerson={setEditing} onOpenTrip={() => setTripOpen(true)} onTrip={setTrip} onAddPerson={addPerson} onPlan={setPlan} onWhen={setWhen}
         />
       )}
 
@@ -213,12 +235,16 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
               <button type="button" className="icon-btn" onClick={copy} aria-label="Copiar el mensaje"><CopyIcon /></button>
             </>
           ) : (
-            <button type="button" className={missing >= 0 ? 'cta pending' : 'cta'} onClick={search} disabled={loading}>
-              {missing < 0
-                ? 'Buscar el sitio justo'
-                : missingCount > 1
+            <button type="button" className={missing >= 0 || noDest || noDriver ? 'cta pending' : 'cta'} onClick={search} disabled={loading}>
+              {missing >= 0
+                ? missingCount > 1
                   ? `Faltan ${missingCount} salidas`
-                  : `Falta desde dónde ${missing === 0 ? 'sales' : `sale ${nameOf(people[missing], missing)}`}`}
+                  : `Falta desde dónde ${missing === 0 ? 'sales' : `sale ${nameOf(people[missing], missing)}`}`
+                : noDest
+                  ? 'Falta adónde vais'
+                  : noDriver
+                    ? 'Falta quién lleva el coche'
+                    : trip.on ? 'Buscar dónde quedar' : 'Buscar el sitio justo'}
             </button>
           )}
         </div>
@@ -236,6 +262,9 @@ export default function Planner({ freeRouting = false }: { freeRouting?: boolean
           person={people[editing]} index={editing} color={COLORS[editing]} canRemove={people.length > 2} bias={bias}
           onChange={(p) => updatePerson(editing, p)} onRemove={() => removePerson(editing)} onClose={() => setEditing(null)}
         />
+      )}
+      {tripOpen && (
+        <TripSheet trip={trip} bias={bias} onChange={setTrip} onClose={() => setTripOpen(false)} />
       )}
       {venueOpen && selected && (
         <VenueSheet option={selected} isSelected onChoose={() => setSelectedId(selected.id)} onClose={() => setVenueOpen(false)} />

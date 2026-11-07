@@ -1,6 +1,8 @@
 'use client';
 // Cada línea mide lo que tarda cada uno hasta el punto de encuentro (amarillo, a la derecha).
 // Los círculos discontinuos marcan lo que tardaría quedando en el punto medio del mapa.
+// Con destino (shared), el eje mide el tiempo hasta el destino (oscuro, a la derecha): cada línea llega al
+// punto de encuentro y desde ahí sigue un solo tramo, el que hacéis juntos; los círculos, yendo cada uno solo.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { MODE_SHAPES, MODE_TXT } from './brand';
 import { gsap, useGSAP, reduceMotion } from '@/lib/gsap';
@@ -10,13 +12,15 @@ type Props = {
   lines: Line[];
   morphKey?: string; // al cambiar, las líneas se estiran o encogen hasta su nuevo valor
   scaleMax?: number; // escala fija para que cambiar de sitio no mueva los ejes
+  shared?: number; // con destino: los minutos que vais juntos desde el punto de encuentro (0 si quedáis allí)
 };
 
-function layout(lines: Line[], W: number, scaleMax = 0) {
+function layout(lines: Line[], W: number, scaleMax = 0, trip?: number) {
+  const shared = trip ?? 0;
   const n = lines.length, rowH = 50, top = 8, axisH = 24;
   const labelW = W < 400 ? 100 : 122;
   const end = W - 24;
-  const maxT = Math.max(10, scaleMax, ...lines.map((l) => Math.max(l.min, l.ghost ?? 0)));
+  const maxT = Math.max(10, scaleMax, ...lines.map((l) => Math.max(l.min + shared, l.ghost ?? 0)));
   const step = maxT > 60 ? 20 : maxT > 30 ? 10 : 5;
   const axis = Math.ceil(maxT / step) * step;
   const k = (end - labelW - 16) / axis;
@@ -24,16 +28,19 @@ function layout(lines: Line[], W: number, scaleMax = 0) {
   return {
     W, H: top + n * rowH + axisH, top, rowH, end, labelW, axis, step, x,
     ys: lines.map((_, i) => top + i * rowH + rowH / 2),
-    xs: lines.map((l) => x(l.min)),
+    xs: lines.map((l) => x(l.min + shared)),
     mins: lines.map((l) => l.min),
+    xm: x(shared), // el punto de encuentro (sin destino, al final)
+    shared,
+    trip: trip != null,
   };
 }
 type Geo = ReturnType<typeof layout>;
 
-export default function Diagram({ lines, morphKey = '', scaleMax }: Props) {
+export default function Diagram({ lines, morphKey = '', scaleMax, shared }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const [W, setW] = useState(0);
-  const geo = useMemo(() => (W ? layout(lines, W, scaleMax) : null), [lines, W, scaleMax]);
+  const geo = useMemo(() => (W ? layout(lines, W, scaleMax, shared) : null), [lines, W, scaleMax, shared]);
   const prev = useRef<Geo | null>(null);
   const shown = useRef(false);
 
@@ -55,11 +62,20 @@ export default function Diagram({ lines, morphKey = '', scaleMax }: Props) {
         .from(q('.dg-line'), { drawSVG: '0%', duration: 0.9, ease: 'power3.out', stagger: 0.09, clearProps: 'all' })
         .from(q('.dg-stop'), { scale: 0, transformOrigin: '50% 50%', duration: 0.35, ease: 'back.out(3)', stagger: 0.09, clearProps: 'transform' }, 0)
         .from(q('.dg-ghost'), { opacity: 0, duration: 0.4 }, 0.5)
-        .from(q('.dg-station'), { scaleY: 0, transformOrigin: '50% 50%', duration: 0.45, ease: 'back.out(2)', clearProps: 'transform' }, 0.55);
+        .from(q('.dg-station, .dg-dest'), { scaleY: 0, transformOrigin: '50% 50%', duration: 0.45, ease: 'back.out(2)', clearProps: 'transform' }, 0.55)
+        .from(q('.dg-trunk'), { drawSVG: '0%', duration: 0.6, ease: 'power2.out', clearProps: 'all' }, 0.7)
+        .from(q('.dg-shared'), { opacity: 0, duration: 0.3 }, 1.1);
       return;
     }
     const p = prev.current;
     if (!p || reduceMotion()) return;
+    // Con destino, el punto de encuentro también se mueve: con él, el final de cada línea y el tramo juntos.
+    if (p.xm !== geo.xm) {
+      const ease = { duration: 0.6, ease: 'power3.inOut' };
+      q('.dg-line').forEach((el) => gsap.fromTo(el, { attr: { x2: p.xm } }, { attr: { x2: geo.xm }, ...ease }));
+      gsap.fromTo(q('.dg-station'), { attr: { x: p.xm - 10 } }, { attr: { x: geo.xm - 10 }, ...ease });
+      gsap.fromTo(q('.dg-trunk'), { attr: { x1: p.xm } }, { attr: { x1: geo.xm }, ...ease });
+    }
     // Morph: cada línea parte de donde estaba y llega a su nuevo largo; los minutos cuentan hasta el valor nuevo.
     const lineEls = q('.dg-line'), stopEls = q('.dg-stop'), minEls = q('.dg-min');
     geo.xs.forEach((x, i) => {
@@ -76,7 +92,8 @@ export default function Diagram({ lines, morphKey = '', scaleMax }: Props) {
 
   useLayoutEffect(() => { prev.current = geo; });
 
-  const label = lines.map((l) => `${l.name}: ${l.min} minutos ${MODE_TXT[l.mode]}`).join('; ');
+  const label = lines.map((l) => `${l.name}: ${l.min} minutos ${MODE_TXT[l.mode]}`).join('; ') + (shared ? `; y luego ${shared} minutos juntos` : '');
+  const midY = geo ? geo.top + (lines.length * geo.rowH) / 2 : 0;
   const chars = geo ? Math.floor(geo.labelW / 9.5) : 10;
   const cut = (s: string) => (s.length > chars ? `${s.slice(0, chars - 1)}…` : s);
 
@@ -97,12 +114,23 @@ export default function Diagram({ lines, morphKey = '', scaleMax }: Props) {
               <text className="dg-name" x={0} y={geo.ys[i] - 4}>{cut(l.name)}</text>
               <g className="dg-mode" transform={`translate(0 ${geo.ys[i] + 3}) scale(.6)`}>{MODE_SHAPES[l.mode]}</g>
               <text className="dg-min" x={19} y={geo.ys[i] + 15}>{`${l.est ? '≈' : ''}${l.min} min`}</text>
-              <line className="dg-line" x1={geo.xs[i]} y1={geo.ys[i]} x2={geo.end + 6} y2={geo.ys[i]} />
+              <line className="dg-line" x1={geo.xs[i]} y1={geo.ys[i]} x2={geo.trip ? geo.xm : geo.end + 6} y2={geo.ys[i]} />
               {l.ghost != null && <circle className="dg-ghost" cx={geo.x(l.ghost)} cy={geo.ys[i]} r={6} />}
               <circle className="dg-stop" cx={geo.xs[i]} cy={geo.ys[i]} r={7} />
             </g>
           ))}
-          <rect className="dg-station" x={geo.end} y={geo.top + 6} width={20} height={lines.length * geo.rowH - 12} rx={10} />
+          {geo.trip && (
+            <>
+              <line className="dg-trunk" x1={geo.xm} y1={midY} x2={geo.end + 6} y2={midY} />
+              {geo.shared > 0 && geo.end - geo.xm > 62 && (
+                <text className="dg-shared" x={geo.end - 6} y={midY - 14} textAnchor="end">
+                  {geo.end - geo.xm > 118 ? `${geo.shared} min juntos` : `${geo.shared} min`}
+                </text>
+              )}
+              <rect className="dg-dest" x={geo.end} y={geo.top + 6} width={20} height={lines.length * geo.rowH - 12} rx={10} />
+            </>
+          )}
+          <rect className="dg-station" x={geo.trip ? geo.xm - 10 : geo.end} y={geo.top + 6} width={20} height={lines.length * geo.rowH - 12} rx={10} />
         </svg>
       )}
     </div>

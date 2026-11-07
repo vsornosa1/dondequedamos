@@ -4,7 +4,7 @@
 import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { BackIcon, ChevronIcon, COLORS, meetPinHtml } from './brand';
+import { BackIcon, ChevronIcon, COLORS, INK, destPinHtml, meetPinHtml } from './brand';
 import { createMap, drawRoutes, laneOf, type Drawn } from './routeLayers';
 import { initialOf, nameOf } from '@/lib/client';
 import { gsap, reduceMotion } from '@/lib/gsap';
@@ -20,11 +20,13 @@ type Props = {
   onSelect: (id: string) => void;
   onOpen: () => void;
   departure: string; // hora de salida de la búsqueda, para que la ruta sea la de ese momento
+  // Con destino: adónde vais. Se marca con una bandera y se dibuja el tramo juntos, en oscuro.
+  dest?: { loc: LatLng; label: string } | null;
 };
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-export default function MeetMap({ people, midpoint, options, selected, plan, onSelect, onOpen, departure }: Props) {
+export default function MeetMap({ people, midpoint, options, selected, plan, onSelect, onOpen, departure, dest = null }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   // Si el estilo ya admite capas. No vale isStyleLoaded(): también espera a las teselas, y justo al
@@ -75,7 +77,8 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     const add = (loc: LatLng, el: HTMLElement, anchor: 'center' | 'bottom' = 'center') =>
       markers.current.push(new maplibregl.Marker({ element: el, anchor }).setLngLat([loc.lng, loc.lat]).addTo(m));
 
-    add(midpoint, pin('pin mid', '½', 'Punto medio del mapa'));
+    if (dest) add(dest.loc, pin('pin-meet dest', destPinHtml(), dest.label), 'bottom');
+    else add(midpoint, pin('pin mid', '½', 'Punto medio del mapa'));
     options.forEach((o, k) => {
       if (o.id === selected.id) return;
       const el = pin('pin venue', String(k + 1), o.name);
@@ -83,7 +86,7 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
       add(o.loc, el);
     });
     people.forEach((p, i) => p.loc && add(p.loc, pin('pin', esc(initialOf(p, i)), nameOf(p, i), COLORS[i])));
-    const meet = pin('pin-meet', meetPinHtml(plan), selected.name);
+    const meet = pin('pin-meet', meetPinHtml(dest ? 'juntos' : plan), selected.name);
     meet.addEventListener('click', () => handlers.current.onOpen());
     add(selected.loc, meet, 'bottom');
     if (!reduceMotion()) gsap.from(meet.firstElementChild, { y: -26, scale: 0.6, duration: 0.6, ease: 'bounce.out', transformOrigin: '50% 100%' });
@@ -97,11 +100,18 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     const delay = first.current ? 0 : 600;
     first.current = false;
     const t = setTimeout(async () => {
-      // Cada uno, con el transporte con el que llega antes a este sitio.
-      const got = await Promise.all(withLoc.map(([p, i]) => routeFor(p.loc!, selected.times[i].mode, selected.loc, departure)));
+      // Cada uno, con el transporte con el que llega antes a este sitio; con destino, también el tramo juntos.
+      const shared = dest && selected.shared?.min ? routeFor(selected.loc, selected.shared.mode, dest.loc, departure) : null;
+      const [got, together] = await Promise.all([
+        Promise.all(withLoc.map(([p, i]) => routeFor(p.loc!, selected.times[i].mode, selected.loc, departure))),
+        shared,
+      ]);
       if (!live) return;
       routes.current = {
-        list: withLoc.flatMap(([, i], k) => (got[k] ? [{ coords: got[k]!, color: COLORS[i], lane: laneOf(i, people.length) }] : [])),
+        list: [
+          ...(together ? [{ coords: together, color: INK, lane: 0 }] : []),
+          ...withLoc.flatMap(([, i], k) => (got[k] ? [{ coords: got[k]!, color: COLORS[i], lane: laneOf(i, people.length) }] : [])),
+        ],
         grow: true,
       };
       draw();
@@ -110,10 +120,11 @@ export default function MeetMap({ people, midpoint, options, selected, plan, onS
     const bounds = new maplibregl.LngLatBounds();
     people.forEach((p) => p.loc && bounds.extend([p.loc.lng, p.loc.lat]));
     bounds.extend([selected.loc.lng, selected.loc.lat]);
+    if (dest) bounds.extend([dest.loc.lng, dest.loc.lat]);
     m.fitBounds(bounds, { padding: { top: 56, bottom: 40, left: 40, right: 40 }, maxZoom: 15, duration: fitted.current && !reduceMotion() ? 700 : 0 });
     fitted.current = true;
     return () => { live = false; clearTimeout(t); };
-  }, [people, midpoint, options, selected, plan, departure]);
+  }, [people, midpoint, options, selected, plan, departure, dest?.loc.lat, dest?.loc.lng]);
 
   // Pasar al sitio anterior o siguiente desde el mapa, en el mismo orden que las tarjetas y los números.
   const at = Math.max(0, options.findIndex((o) => o.id === selected.id));

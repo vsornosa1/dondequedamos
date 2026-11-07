@@ -2,14 +2,15 @@
 // El cartel amarillo del punto de encuentro. Al cambiar de sitio, el nombre gira letra a letra
 // como en los paneles de las estaciones.
 import { useRef, useState } from 'react';
-import { PlanIcon, ChevronIcon } from './brand';
+import { PlanIcon, ChevronIcon, type Badge } from './brand';
 import { gsap, useGSAP, SplitText, reduceMotion } from '@/lib/gsap';
 import { photoSrc, priceText, ratingText } from '@/lib/client';
 import type { Option, Plan } from '@/lib/types';
 
-type Props = { option: Option; plan: Plan; photo: Option['photo']; label?: string; onMore?: () => void };
+// badge: el icono del cartel (el plan, o «juntos» con destino); line: la frase de abajo, si no es la de siempre.
+type Props = { option: Option; plan: Plan; badge?: Badge; photo: Option['photo']; label?: string; line?: string; onMore?: () => void };
 
-export default function Sign({ option, plan, photo, label = 'Punto de encuentro', onMore }: Props) {
+export default function Sign({ option, plan, badge = plan, photo, label = 'Punto de encuentro', line, onMore }: Props) {
   const root = useRef<HTMLElement>(null);
   const [loaded, setLoaded] = useState<string | null>(null);
   const [broken, setBroken] = useState<string | null>(null);
@@ -44,11 +45,11 @@ export default function Sign({ option, plan, photo, label = 'Punto de encuentro'
         </button>
       )}
       <div className="sign-body">
-        <p className="sign-label"><PlanIcon plan={plan} />{label}</p>
+        <p className="sign-label"><PlanIcon plan={badge} />{label}</p>
         <h2 className="sign-name" key={option.id}>{option.name}</h2>
         {facts.length > 0 && <ul className="sign-facts">{facts.map((f) => <li key={f}>{f}</li>)}</ul>}
         <p className="sign-line">
-          Nadie tarda más de {Math.round(option.justo.max)} min. Diferencia: {Math.round(option.justo.gap)} min.
+          {line ?? `Nadie tarda más de ${Math.round(option.justo.max)} min. Diferencia: ${Math.round(option.justo.gap)} min.`}
         </p>
         {onMore && (
           <button type="button" className="sign-more" onClick={onMore}>

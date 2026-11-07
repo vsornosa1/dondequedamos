@@ -22,10 +22,12 @@ export default async function Image({ params }: { params: Promise<{ data: string
             <OgMark size={58} />¿Quedamos aquí?
           </div>
           <div style={{ display: 'flex', fontSize: name.length > 22 ? 64 : 80, fontWeight: 900, lineHeight: 0.98, letterSpacing: -2 }}>{name}</div>
-          <div style={{ display: 'flex', fontSize: 28, fontWeight: 800 }}>El sitio más justo para todos</div>
+          <div style={{ display: 'flex', fontSize: 28, fontWeight: 800 }}>
+            {p?.trip?.min ? `Y luego juntos a ${p.trip.name.slice(0, 24)}` : 'El sitio más justo para todos'}
+          </div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', flex: 1, padding: '40px 60px 40px 44px' }}>
-          <div style={{ display: 'flex', fontSize: 28, fontWeight: 600, marginBottom: 18, color: '#4A5565' }}>Lo que tarda cada uno</div>
+          <div style={{ display: 'flex', fontSize: 28, fontWeight: 600, marginBottom: 18, color: '#4A5565' }}>{p?.trip?.min ? 'Lo que tarda cada uno hasta aquí' : 'Lo que tarda cada uno'}</div>
           <OgLines people={people} width={540} />
         </div>
       </div>

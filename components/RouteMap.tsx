@@ -4,20 +4,26 @@
 import { useEffect, useRef } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { COLORS, meetPinHtml } from './brand';
+import { COLORS, INK, destPinHtml, meetPinHtml, type Badge } from './brand';
 import { createMap, drawRoutes, laneOf } from './routeLayers';
 import { initialOf } from '@/lib/client';
-import type { LatLng, Plan } from '@/lib/types';
+import type { LatLng, Proposal } from '@/lib/types';
 
-type Props = { to: LatLng; plan: Plan; name: string; people: { name: string }[]; routes: ([number, number][] | null)[] };
+type Props = {
+  to: LatLng; plan: Badge; name: string; people: { name: string }[]; routes: ([number, number][] | null)[];
+  trip?: Proposal['trip']; // con destino: la bandera y el tramo juntos
+};
 
-export default function RouteMap({ to, plan, name, people, routes }: Props) {
+export default function RouteMap({ to, plan, name, people, routes, trip = null }: Props) {
   const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!box.current) return;
     const m = createMap(box.current, to);
-    const drawn = routes.flatMap((r, i) => (r ? [{ coords: r, color: COLORS[i], lane: laneOf(i, people.length) }] : []));
+    const drawn = [
+      ...(trip?.route ? [{ coords: trip.route, color: INK, lane: 0 }] : []),
+      ...routes.flatMap((r, i) => (r ? [{ coords: r, color: COLORS[i], lane: laneOf(i, people.length) }] : [])),
+    ];
     let stop = () => {};
     m.on('style.load', () => { stop = drawRoutes(m, drawn); });
 
@@ -37,12 +43,21 @@ export default function RouteMap({ to, plan, name, people, routes }: Props) {
     meet.title = name;
     new maplibregl.Marker({ element: meet, anchor: 'bottom' }).setLngLat([to.lng, to.lat]).addTo(m);
 
+    if (trip) {
+      const flag = document.createElement('div');
+      flag.className = 'pin-meet dest';
+      flag.innerHTML = destPinHtml();
+      flag.title = trip.name;
+      new maplibregl.Marker({ element: flag, anchor: 'bottom' }).setLngLat([trip.loc.lng, trip.loc.lat]).addTo(m);
+    }
+
     const bounds = new maplibregl.LngLatBounds([to.lng, to.lat], [to.lng, to.lat]);
+    if (trip) bounds.extend([trip.loc.lng, trip.loc.lat]);
     drawn.forEach((r) => r.coords.forEach((c) => bounds.extend(c)));
-    if (drawn.length) m.fitBounds(bounds, { padding: { top: 56, bottom: 40, left: 40, right: 40 }, maxZoom: 15, duration: 0 });
+    if (drawn.length || trip) m.fitBounds(bounds, { padding: { top: 56, bottom: 40, left: 40, right: 40 }, maxZoom: 15, duration: 0 });
     else m.setZoom(15);
     return () => { stop(); m.remove(); };
-  }, [to, plan, name, people, routes]);
+  }, [to, plan, name, people, routes, trip]);
 
   return <div className="map" ref={box} />;
 }
